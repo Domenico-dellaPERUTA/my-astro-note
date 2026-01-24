@@ -59,14 +59,15 @@
   dialog {
     position: absolute;
     top: 25%;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 25%;
+    transform: translateX(-25%) translateY(-25%);
     margin: 20px;
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     max-width: 400px;
     width: 80%;
     font-family: "Courier New", Courier, monospace;
+    z-index: 1000;
   }
 
   span {

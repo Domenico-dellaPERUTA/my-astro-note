@@ -99,6 +99,7 @@
     </form>
 {:else}
     <div class="annotazione">
+        <span class="pin">📍 </span>
         <h2>{titolo}</h2>
         <div class="testo">{@html html}</div>
     </div>
@@ -106,7 +107,15 @@
 
 <!-- [ Style ] ---------------------------------------------------------------------------------->
 <style>
+    .pin {
+        position: absolute;
+        top: -1rem;
+        left: 0.5rem;
+        font-size: 3rem;
+        overflow: visible;
+    }
     .annotazione {
+        position: relative;
         display: flex;
         flex-direction: column;
         gap: 20px;

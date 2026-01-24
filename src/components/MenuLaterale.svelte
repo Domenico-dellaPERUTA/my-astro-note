@@ -55,8 +55,8 @@
 
   async function aggiungiVoce() {
     try {
-      const title = `Appunto ${$notes.length + 1}`;
-      const content = `Contenuto dell'appunto ${$notes.length + 1}`;
+      const title = `Nota [${$notes.length + 1}] - ${new Date().toLocaleDateString("it-IT", { year: "numeric", month: "2-digit", day: "2-digit" })}`;
+      const content = `Contenuto della nota ${$notes.length + 1} ...`;
 
       const response = await fetch("/api/notes", {
         method: "POST",
