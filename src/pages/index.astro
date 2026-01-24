@@ -1,48 +1,50 @@
 ---
-import BarraPrincipale from '../components/BarraPrincipale.svelte';
-import MenuLaterale from '../components/MenuLaterale.svelte';
-import Annotazione from '../components/Annotazione.svelte';
-import Layout from '../layouts/Layout.astro';
-import { notesDb } from '../db/mysql';
-import Messaggio from '../components/Messaggio.svelte'; 
+import BarraPrincipale from "../components/BarraPrincipale.svelte";
+import MenuLaterale from "../components/MenuLaterale.svelte";
+import Annotazione from "../components/Annotazione.svelte";
+import Layout from "../layouts/Layout.astro";
+import { notesDb } from "../db/mysql";
+import Messaggio from "../components/Messaggio.svelte";
 
 // Carica le note dal database lato server
 const notesData = await notesDb.getAll();
 ---
 
-<Layout> 
-    <section>
-        <BarraPrincipale titolo="✏️ Appunti" />
-    </section>
+<Layout>
+  <section>
+    <BarraPrincipale titolo="Appunti" client:load />
+  </section>
 
-    <div class="main-container">
+  <div class="main-container">
+    <aside class="sidebar">
+      <MenuLaterale titolo="Lista Note" initialNotes={notesData} client:load />
+    </aside>
 
-      <aside class="sidebar">
-        <MenuLaterale titolo="Lista Note" initialNotes={notesData} client:load />
-      </aside>
-      
-      <main class="content-area">
-        <Messaggio client:load />
-        <Annotazione client:load />
-      </main>
-      
-    </div>
+    <main class="content-area">
+      <Messaggio client:load />
+      <Annotazione client:load />
+    </main>
+  </div>
 </Layout>
 
 <style is:global>
-    .main-container {
-        display: flex;
-        height: calc(100vh - 60px);
-    }
-    .sidebar {
-        width: 25rem;
-        background-color: #06030399;
-        border-right: 1px solid #ddd;
-        overflow-y: auto;
-    }
-    .content-area {
-        flex: 1;
-        padding: 0;
-        overflow-y: auto;
-    }
+  .main-container {
+    display: flex;
+    height: calc(100vh - 60px);
+    background-color: var(--bg-paper);
+  }
+  .sidebar {
+    width: 22rem; /* Slightly narrower */
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid #111;
+    overflow-y: auto;
+  }
+  .content-area {
+    flex: 1;
+    padding: 0;
+    overflow-y: auto;
+    /* Subtle texture overlay for main content */
+    background-image: radial-gradient(#d0c9b6 2px, transparent 2px);
+    background-size: 30px 30px;
+  }
 </style>

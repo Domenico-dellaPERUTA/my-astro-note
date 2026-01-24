@@ -116,20 +116,43 @@
   .menu-laterale {
     top: 0;
     width: 100%;
-    background-color: #7b7b7f;
-    border-right: 2px solid #dddddd;
+    height: 100%;
+    background-color: var(--sidebar-bg); /* Dark metal look */
+    border-right: 4px solid #1a1a1a;
     padding: 0rem;
     margin: 0rem;
-    color: #ffffff;
-    font-family: "Courier New", Courier, monospace;
+    color: #e0e0e0;
+    font-family: var(--font-main);
     font-size: medium;
+    box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.5);
   }
 
   h2 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+    color: #f4ecd8; /* Paper color text */
+    margin: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 2px dashed #555;
+    padding-bottom: 10px;
+  }
+
+  h2 button {
+    background: #d45d5d;
+    border: 1px solid #555;
     color: #fff;
-    margin: 0.5rem;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+  }
+
+  h2 button:hover {
+    background: #444;
+    border-color: #fff;
   }
 
   ul {
@@ -142,41 +165,69 @@
     justify-content: space-between;
     align-items: center;
     padding: 0;
-    border-bottom: 1px solid #ffffff;
-    color: #fff;
+    border-bottom: 1px solid #444;
+    color: #ccc;
+    transition: background-color 0.2s;
+  }
+
+  li:hover {
+    background-color: #383838;
   }
 
   li > button:first-child {
     flex: 1;
-    padding: 10px;
+    padding: 12px 15px;
     text-align: left;
     background: none;
     border: none;
-    color: #fff;
+    color: #ccc;
     cursor: pointer;
-    font-family: "Courier New", Courier, monospace;
-    font-size: medium;
-  }
-
-  .selected {
-    background-color: #2e6a32 !important;
+    font-family: var(--font-main);
+    font-size: 1rem;
+    transition: color 0.2s;
   }
 
   li > button:first-child:hover {
-    background-color: #444449;
+    color: #fff;
+    background: none;
   }
+
+  .selected {
+    background-color: #d45d5d !important; /* Highlight red tape */
+    color: #fff !important;
+    position: relative;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  }
+
+  .selected::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #fff;
+  }
+
   li > button {
     margin: 0;
-    padding-left: 1rem;
   }
   button {
-    margin-left: 10px;
+    margin-right: 10px;
     cursor: pointer;
     font-size: 1rem;
-    right: 0rem;
+    background: none;
+    border: none;
+    opacity: 0.6;
+    transition: opacity 0.2s;
   }
-  .elimina,
-  .modifica {
-    margin-left: 0;
+
+  button:hover {
+    opacity: 1;
+  }
+
+  .elimina:hover {
+    filter: grayscale(0) !important;
+    transform: scale(1.1);
   }
 </style>

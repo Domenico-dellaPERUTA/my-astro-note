@@ -75,23 +75,25 @@
         <label for="titolo">Titolo:</label>
         <div>
             <input type="text" id="titolo" bind:value={titolo} />
-            <input class="save" type="submit" value="💾 Salva" />
         </div>
-        <label for="testo">Testo:</label>
+        <label for="testo">Testo (Markdown):</label>
         <div class="editor-container">
             <textarea id="testo" bind:value={testo}></textarea>
-            <div class="markdown-legend">
-                <h4>Markdown Help</h4>
-                <ul>
-                    <li><b>**Bold**</b></li>
-                    <li><i>*Italic*</i></li>
-                    <li># Header 1</li>
-                    <li>## Header 2</li>
-                    <li>- List item</li>
-                    <li>[Link](url)</li>
-                    <li>`Code`</li>
-                    <li>```block```</li>
-                </ul>
+            <div class="sidebar-tools">
+                <button class="save" type="submit">💾 SALVA NOTA</button>
+                <div class="markdown-legend">
+                    <h4>Markdown Help</h4>
+                    <ul>
+                        <li><b>**Bold**</b></li>
+                        <li><i>*Italic*</i></li>
+                        <li># Header 1</li>
+                        <li>## Header 2</li>
+                        <li>- List item</li>
+                        <li>[Link](url)</li>
+                        <li>`Code`</li>
+                        <li>```block```</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </form>
@@ -107,86 +109,165 @@
     .annotazione {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        font-family: "Courier New", Courier, monospace;
-        background-color: #f9f9f9;
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
+        gap: 20px;
+        font-family: var(--font-main);
+        background-color: #fffcf0; /* Ligher paper for the sheet */
+        padding: 40px;
+        /* Paper effect */
+        box-shadow:
+            1px 1px 3px rgba(0, 0, 0, 0.1),
+            5px 5px 0px rgba(0, 0, 0, 0.05);
+        margin: 20px;
+        max-width: 1200px;
+        min-height: 80vh;
+    }
+
+    h2 {
+        border-bottom: 2px solid var(--text-ink);
+        padding-bottom: 10px;
+        margin-top: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
     .editor-container {
         display: flex;
-        gap: 15px;
+        gap: 30px;
+        height: 100%;
+        flex: 1;
+    }
+
+    .sidebar-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 220px;
     }
 
     .markdown-legend {
-        width: 200px;
-        padding: 10px;
-        background: #eee;
-        border-radius: 4px;
+        width: 100%;
+        padding: 15px;
+        background: #fff8dc; /* Sticky note yellow */
+        background-image: linear-gradient(#fcf4d4 1px, transparent 1px);
+        background-size: 100% 1.5rem;
+        border-radius: 2px;
         font-size: 0.85rem;
-        border: 1px solid #ccc;
+        border: 1px solid #e0d0a0;
         height: fit-content;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        transform: rotate(1deg); /* Slight handcrafted rotation */
     }
 
     .markdown-legend h4 {
-        margin: 0 0 10px 0;
-        border-bottom: 1px solid #ccc;
-        padding-bottom: 5px;
+        margin: -5px 0 15px 0;
+        font-family: sans-serif; /* Contrast font for 'printed' instructions */
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #888;
+        letter-spacing: 1px;
+        border-bottom: none;
     }
 
     .markdown-legend ul {
         list-style: none;
         padding: 0;
         margin: 0;
+        line-height: 1.5rem; /* Match grid lines */
     }
 
     .markdown-legend li {
-        margin-bottom: 5px;
-        font-family: monospace;
+        margin-bottom: 0;
+        font-family: var(--font-main);
+        color: #555;
     }
 
     label {
         font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        color: #666;
     }
 
     input[type="text"],
     textarea,
     .testo {
-        width: 90%;
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-family: "Courier New", Courier, monospace;
-        font-size: large;
-        display: inline;
+        width: 100%;
+        padding: 15px;
+        border: 2px solid transparent; /* Reset borders */
+        font-family: var(--font-main);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: var(--text-ink);
+        outline: none;
+    }
+
+    input[type="text"] {
+        border-bottom: 1px dashed #ccc;
+        background-color: #ffffff;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    input[type="text"]:focus {
+        border-bottom-color: var(--highlight);
+        background-color: #ffffff;
     }
 
     .testo {
-        border: 1px solid #cccccc00;
-        width: 100%; /* Full width when viewing */
+        border: none;
+        width: 100%;
     }
 
     textarea {
+        background-color: #ffffff; /* Explicit white background */
+        border: 1px solid #ccc;
+        box-shadow: inset 1px 1px 5px rgba(0, 0, 0, 0.05); /* Slight inset for depth */
         resize: vertical;
-        height: 45rem;
-        flex-grow: 1; /* Allow textarea to take remaining space */
-        width: auto; /* Override previous width: 99% */
+        height: 60vh;
+        flex-grow: 1;
+        width: auto;
+        color: #000; /* Deep black ink */
+        font-size: 1rem;
+        font-family: var(--font-main);
+    }
+
+    textarea:focus {
+        border-color: var(--highlight);
+        box-shadow:
+            inset 1px 1px 5px rgba(0, 0, 0, 0.05),
+            0 0 0 2px rgba(212, 93, 93, 0.1);
     }
 
     .save {
         align-self: flex-start;
-        background-color: #4caf50;
+        background-color: #aa4b4b;
         color: white;
         border: none;
-        padding: 0.5rem 1rem;
+        padding: 1rem 1.5rem;
         text-align: center;
         text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        margin-top: 10px;
+        display: block;
+        width: 100%;
+        font-size: 1.1rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: 2px;
+        box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.3); /* Stronger shadow/button press feel */
+        transition: all 0.1s;
+        border: 1px solid #b74141; /* Slightly darker border */
+    }
+
+    .save:hover {
+        background-color: #e56b6b;
+        transform: translateY(-1px);
+        box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+    }
+
+    .save:active {
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
     }
 </style>
