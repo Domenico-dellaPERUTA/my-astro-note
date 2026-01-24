@@ -13,13 +13,13 @@
         isEdit,
         type Nota,
     } from "../stores/notesStore";
-    import { marked } from "marked";
-    import DOMPurify from "dompurify";
+    import { renderMarkdown } from "../utils/markdown";
 
     $: titolo = $notes.at($selectedNoteIndex)?.title ?? "";
     $: testo = $notes.at($selectedNoteIndex)?.content ?? "";
 
-    //$: html = DOMPurify.sanitize(marked.parser(testo));
+    let html = "";
+    $: renderMarkdown(testo).then((res) => (html = res));
 
     async function saveNote(params: { title: string; content: string }) {
         if ($selectedNoteIndex === -1) return;
@@ -78,15 +78,27 @@
             <input class="save" type="submit" value="💾 Salva" />
         </div>
         <label for="testo">Testo:</label>
-        <textarea id="testo" bind:value={testo}></textarea>
+        <div class="editor-container">
+            <textarea id="testo" bind:value={testo}></textarea>
+            <div class="markdown-legend">
+                <h4>Markdown Help</h4>
+                <ul>
+                    <li><b>**Bold**</b></li>
+                    <li><i>*Italic*</i></li>
+                    <li># Header 1</li>
+                    <li>## Header 2</li>
+                    <li>- List item</li>
+                    <li>[Link](url)</li>
+                    <li>`Code`</li>
+                    <li>```block```</li>
+                </ul>
+            </div>
+        </div>
     </form>
 {:else}
     <div class="annotazione">
         <h2>{titolo}</h2>
-        <!--
-    <div class="testo">{@html html}</div>
-    -->
-        <div class="testo">{testo}</div>
+        <div class="testo">{@html html}</div>
     </div>
 {/if}
 
@@ -101,6 +113,38 @@
         padding: 15px;
         border: 1px solid #ddd;
         border-radius: 5px;
+    }
+
+    .editor-container {
+        display: flex;
+        gap: 15px;
+    }
+
+    .markdown-legend {
+        width: 200px;
+        padding: 10px;
+        background: #eee;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        border: 1px solid #ccc;
+        height: fit-content;
+    }
+
+    .markdown-legend h4 {
+        margin: 0 0 10px 0;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 5px;
+    }
+
+    .markdown-legend ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .markdown-legend li {
+        margin-bottom: 5px;
+        font-family: monospace;
     }
 
     label {
@@ -121,14 +165,16 @@
 
     .testo {
         border: 1px solid #cccccc00;
+        width: 100%; /* Full width when viewing */
     }
 
-    textarea,
-    .testo {
+    textarea {
         resize: vertical;
         height: 45rem;
-        width: 99%;
+        flex-grow: 1; /* Allow textarea to take remaining space */
+        width: auto; /* Override previous width: 99% */
     }
+
     .save {
         align-self: flex-start;
         background-color: #4caf50;
