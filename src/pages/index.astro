@@ -3,16 +3,11 @@ import BarraPrincipale from '../components/BarraPrincipale.svelte';
 import MenuLaterale from '../components/MenuLaterale.svelte';
 import Annotazione from '../components/Annotazione.svelte';
 import Layout from '../layouts/Layout.astro';
+import { notesDb } from '../db/mysql';
+import Messaggio from '../components/Messaggio.svelte'; 
 
-
-
-const listaNote = [
-    'Appunto 1',
-    'Appunto 2',
-    'Appunto 3',
-    'Appunto 4',
-    'Appunto 5',
-];
+// Carica le note dal database lato server
+const notesData = await notesDb.getAll();
 ---
 
 <Layout> 
@@ -23,13 +18,14 @@ const listaNote = [
     <div class="main-container">
 
       <aside class="sidebar">
-        <MenuLaterale titolo="Lista Note" client:load />
+        <MenuLaterale titolo="Lista Note" initialNotes={notesData} client:load />
       </aside>
       
       <main class="content-area">
-        <Annotazione testo="Questo è un appunto di esempio..." client:load />
+        <Messaggio client:load />
+        <Annotazione client:load />
       </main>
-	  
+      
     </div>
 </Layout>
 

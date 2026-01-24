@@ -1,37 +1,117 @@
-<script lang="ts">
-  import { selectedNoteIndex , notes, type Nota } from '../stores/notesStore';
-  
-  export let titolo = "Lista Note";
-  //export let voci: string[] = [];
+<!--
+---------------------------------------------------------------------------------------------------
+ src/components/MenuLaterale.svelte 
+---------------------------------------------------------------------------------------------------
+-->
 
-  function eliminaVoce(index: number) {
-    notes.update(notes => notes.filter((_, i) => i !== index));
+<!-- [ Controller ] ------------------------------------------------------------------------------>
+<script lang="ts">
+  import {
+    selectedNoteIndex,
+    notes,
+    message,
+    isEdit,
+    type Nota,
+  } from "../stores/notesStore";
+  import { onMount } from "svelte";
+
+  export let titolo = "Lista Note";
+  export let initialNotes: Nota[] = [];
+
+  onMount(() => {
+    if (initialNotes.length > 0) {
+      notes.set(initialNotes);
+    }
+  });
+
+  async function eliminaVoce(index: number) {
+    const noteId = $notes[index]?.id;
+    if (!noteId) return;
+
+    try {
+      message.set({
+        text: `Vuoi davvero, eliminare la nota "${$notes[index].title}" ?`,
+        type: "confirmation",
+        confirm: async () => {
+          const response = await fetch(`/api/note/${noteId}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) throw new Error("Errore nell'eliminazione");
+
+          notes.update((notes) => notes.filter((_, i) => i !== index));
+
+          if ($selectedNoteIndex === index) {
+            selectedNoteIndex.set(-1);
+          }
+        },
+      });
+    } catch (error) {
+      const errorMessage = "Errore nell'eliminazione della nota";
+      message.set({ text: errorMessage, type: "error" });
+      console.error(errorMessage + ":", error);
+    }
   }
-  
-  function aggiungiVoce() {
-    const nuovaVoce = { title: `Appunto ${$notes.length + 1}`, content: `Contenuto dell'appunto ${$notes.length + 1}` };
-    notes.update(notes => [...notes, nuovaVoce]);
+
+  async function aggiungiVoce() {
+    try {
+      const title = `Appunto ${$notes.length + 1}`;
+      const content = `Contenuto dell'appunto ${$notes.length + 1}`;
+
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Errore nella creazione");
+
+      notes.update((notes) => [...notes, data]);
+      selectedNoteIndex.set($notes.length - 1); // Seleziona la nuova nota
+      isEdit.set(true);
+    } catch (error) {
+      const errorMessage = "Errore nella creazione della nota";
+      message.set({ text: errorMessage, type: "error" });
+      console.error(errorMessage + ":", error);
+    }
   }
 </script>
 
+<!-- [ View ] ------------------------------------------------------------------------------------>
 <aside class="menu-laterale">
   <h2>{titolo} <button on:click={aggiungiVoce}> ➕ </button></h2>
   <ul>
     {#each $notes as voce, index}
       <li>
-        <button 
-          type="button" 
-          class={$selectedNoteIndex === index ? "selected" : ""} 
-          on:click={() => selectedNoteIndex.set(index)}
+        <!-- voce menu -->
+        <button
+          type="button"
+          class={$selectedNoteIndex === index ? "selected" : ""}
+          on:click={() => {
+            selectedNoteIndex.set(index);
+            isEdit.set(false);
+          }}
         >
           {voce.title}
         </button>
-        <button type="button" on:click={() => eliminaVoce(index)} class="elimina">🗑️</button>
+        <!-- pulsante modifica voce menu -->
+        <button type="button" on:click={() => isEdit.set(true)} class="modifica"
+          >✏️</button
+        >
+        <!-- pulsante eliminazione voce menu -->
+        <button
+          type="button"
+          on:click={() => eliminaVoce(index)}
+          class="elimina">🗑️</button
+        >
       </li>
     {/each}
   </ul>
 </aside>
 
+<!-- [ Style ] ---------------------------------------------------------------------------------->
 <style>
   .menu-laterale {
     top: 0;
@@ -95,7 +175,8 @@
     font-size: 1rem;
     right: 0rem;
   }
-  .elimina {
+  .elimina,
+  .modifica {
     margin-left: 0;
   }
 </style>
