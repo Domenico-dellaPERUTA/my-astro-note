@@ -3,7 +3,6 @@
  src/components/MenuLaterale.svelte 
 ---------------------------------------------------------------------------------------------------
 -->
-
 <!-- [ Controller ] ------------------------------------------------------------------------------>
 <script lang="ts">
   import {
@@ -14,6 +13,7 @@
     type Nota,
   } from "../stores/notesStore";
   import { onMount } from "svelte";
+  import MenuVoce from "./MenuVoce.svelte";
 
   export let titolo = "Lista Note";
   export let initialNotes: Nota[] = [];
@@ -24,36 +24,79 @@
     }
   });
 
-  async function eliminaVoce(index: number) {
-    const noteId = $notes[index]?.id;
-    if (!noteId) return;
+  // Converte la lista delle note in una struttura ad albero
+  $: listaAlbero = creaAlberoNote($notes);
 
-    try {
-      message.set({
-        text: `Vuoi davvero, eliminare la nota "${$notes[index].title}" ?`,
-        type: "confirmation",
-        confirm: async () => {
-          const response = await fetch(`/api/note/${noteId}`, {
+  // Costruisce l'albero delle note
+  function creaAlberoNote(lista: Nota[]): Nota[] {
+    const nodoPrincipale: Nota[] = [];
+    const mappa = new Map<number, Nota>();
+
+    // Inizializza la mappa con i nodi e array children
+    lista.forEach((note) => {
+      mappa.set(note.id, { ...note, children: [] });
+    });
+
+    // Collega i figli ai loro genitori
+    lista.forEach((note) => {
+      const node = mappa.get(note.id)!;
+      if (note.parent_id && mappa.has(note.parent_id)) {
+        mappa.get(note.parent_id)!.children!.push(node);
+      } else {
+        nodoPrincipale.push(node);
+      }
+    });
+
+    return nodoPrincipale;
+  }
+
+  async function seleziona(evento: CustomEvent<Nota>) {
+    const nota = evento.detail;
+    const indice = $notes.findIndex((n) => n.id === nota.id);
+    selectedNoteIndex.set(indice);
+    isEdit.set(false);
+  }
+
+  async function edita() {
+    isEdit.set(true);
+  }
+
+  async function cancella(evento: CustomEvent<Nota>) {
+    const nota = evento.detail;
+    const indice = $notes.findIndex((n) => n.id === nota.id);
+
+    message.set({
+      text: `Vuoi davvero eliminare la nota "${nota.title}" e tutti i suoi figli?`,
+      type: "confirmation",
+      confirm: async () => {
+        try {
+          const response = await fetch(`/api/note/${nota.id}`, {
             method: "DELETE",
           });
 
           if (!response.ok) throw new Error("Errore nell'eliminazione");
 
-          notes.update((notes) => notes.filter((_, i) => i !== index));
+          const datiBE = await fetch("/api/notes");
+          const noteAggiornate = await datiBE.json();
+          notes.set(noteAggiornate);
 
-          if ($selectedNoteIndex === index) {
+          if ($selectedNoteIndex === indice) {
             selectedNoteIndex.set(-1);
           }
-        },
-      });
-    } catch (error) {
-      const errorMessage = "Errore nell'eliminazione della nota";
-      message.set({ text: errorMessage, type: "error" });
-      console.error(errorMessage + ":", error);
-    }
+        } catch (error) {
+          console.error(error);
+          message.set({ text: "Errore durante l'eliminazione", type: "error" });
+        }
+      },
+    });
   }
 
-  async function aggiungiVoce() {
+  async function aggiungiFiglio(evento: CustomEvent<Nota>) {
+    const parent = evento.detail;
+    await aggiungiVoce(parent.id);
+  }
+
+  async function aggiungiVoce(parentId?: number) {
     try {
       const title = `Nota [${$notes.length + 1}] - ${new Date().toLocaleDateString("it-IT", { year: "numeric", month: "2-digit", day: "2-digit" })}`;
       const content = `Contenuto della nota ${$notes.length + 1} ...`;
@@ -61,15 +104,19 @@
       const response = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ title, content, parentId }),
       });
 
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.error || "Errore nella creazione");
 
-      notes.update((notes) => [...notes, data]);
-      selectedNoteIndex.set($notes.length - 1); // Seleziona la nuova nota
+      notes.update((currentNotes) => {
+        const updatedNotes = [...currentNotes, data];
+        const newIndex = updatedNotes.findIndex((n) => n.id === data.id);
+        selectedNoteIndex.set(newIndex);
+        return updatedNotes;
+      });
       isEdit.set(true);
     } catch (error) {
       const errorMessage = "Errore nella creazione della nota";
@@ -81,32 +128,22 @@
 
 <!-- [ View ] ------------------------------------------------------------------------------------>
 <aside class="menu-laterale">
-  <h2>{titolo} <button on:click={aggiungiVoce}> ➕ </button></h2>
+  <h2>
+    {titolo}
+    <button on:click={() => aggiungiVoce()} title="Nuova nota radice">
+      ➕
+    </button>
+  </h2>
   <ul>
-    {#each $notes as voce, index}
-      <li>
-        <!-- voce menu -->
-        <button
-          type="button"
-          class={$selectedNoteIndex === index ? "selected" : ""}
-          on:click={() => {
-            selectedNoteIndex.set(index);
-            isEdit.set(false);
-          }}
-        >
-          {voce.title}
-        </button>
-        <!-- pulsante modifica voce menu -->
-        <button type="button" on:click={() => isEdit.set(true)} class="modifica"
-          >✏️</button
-        >
-        <!-- pulsante eliminazione voce menu -->
-        <button
-          type="button"
-          on:click={() => eliminaVoce(index)}
-          class="elimina">🗑️</button
-        >
-      </li>
+    {#each listaAlbero as rootNote (rootNote.id)}
+      <MenuVoce
+        nota={rootNote}
+        indiceSelezionato={$notes[$selectedNoteIndex]?.id}
+        on:select={seleziona}
+        on:edit={edita}
+        on:delete={cancella}
+        on:add-child={aggiungiFiglio}
+      />
     {/each}
   </ul>
 </aside>
@@ -125,6 +162,7 @@
     font-family: var(--font-main);
     font-size: medium;
     box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
   }
 
   h2 {
@@ -136,6 +174,9 @@
     letter-spacing: 2px;
     border-bottom: 2px dashed #555;
     padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   h2 button {
@@ -148,6 +189,10 @@
     padding: 0;
     font-size: 1.2rem;
     transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   h2 button:hover {
@@ -158,76 +203,5 @@
   ul {
     list-style-type: none;
     padding: 0;
-  }
-
-  li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0;
-    border-bottom: 1px solid #444;
-    color: #ccc;
-    transition: background-color 0.2s;
-  }
-
-  li:hover {
-    background-color: #383838;
-  }
-
-  li > button:first-child {
-    flex: 1;
-    padding: 12px 15px;
-    text-align: left;
-    background: none;
-    border: none;
-    color: #ccc;
-    cursor: pointer;
-    font-family: var(--font-main);
-    font-size: 1rem;
-    transition: color 0.2s;
-  }
-
-  li > button:first-child:hover {
-    color: #fff;
-    background: none;
-  }
-
-  .selected {
-    background-color: #d45d5d !important; /* Highlight red tape */
-    color: #fff !important;
-    position: relative;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-  }
-
-  .selected::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background-color: #fff;
-  }
-
-  li > button {
-    margin: 0;
-  }
-  button {
-    margin-right: 10px;
-    cursor: pointer;
-    font-size: 1rem;
-    background: none;
-    border: none;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-  }
-
-  button:hover {
-    opacity: 1;
-  }
-
-  .elimina:hover {
-    filter: grayscale(0) !important;
-    transform: scale(1.1);
   }
 </style>

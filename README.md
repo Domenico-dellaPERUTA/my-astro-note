@@ -75,12 +75,21 @@ CREATE TABLE IF NOT EXISTS notes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   content LONGTEXT NOT NULL,
+  parent_id INT DEFAULT NULL, -- Per le note figlio
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE CASCADE
 );
 
 -- (Opzionale) Inserisci una nota di prova
 INSERT INTO notes (title, content) VALUES ('Benvenuto', 'Questa è la tua prima nota in **Markdown**!');
+```
+
+### Aggiornamento Schema esistente (Migrations)
+Se hai già creato la tabella, esegui:
+```sql
+ALTER TABLE notes ADD COLUMN parent_id INT DEFAULT NULL;
+ALTER TABLE notes ADD CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE CASCADE;
 ```
 
 ### 4. Configura le Variabili d'Ambiente

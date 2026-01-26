@@ -16,6 +16,7 @@ export interface Note {
   id: number;
   title: string;
   content: string;
+  parent_id?: number | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -24,7 +25,7 @@ export const notesDb = {
   async getAll(): Promise<Note[]> {
     try {
       const [rows] = await pool.query<any[]>(
-        'SELECT * FROM notes ORDER BY updated_at DESC'
+        'SELECT * FROM notes ORDER BY created_at ASC' // Change order logic if needed for tree
       );
       return rows as Note[];
     } catch (error) {
@@ -46,20 +47,20 @@ export const notesDb = {
     }
   },
 
-  async create(title: string, content: string): Promise<number> {
+  async create(title: string, content: string, parentId?: number): Promise<number> {
     try {
       const [result] = await pool.query(
-        'INSERT INTO notes (title, content) VALUES (?, ?)',
-        [title, content]
+        'INSERT INTO notes (title, content, parent_id) VALUES (?, ?, ?)',
+        [title, content, parentId || null]
       );
-      
+
       console.log('Insert result:', result);
       const insertId = (result as any).insertId;
-      
+
       if (!insertId) {
         throw new Error('Nessun ID generato dall\'insert');
       }
-      
+
       return insertId;
     } catch (error) {
       console.error('Database error in create:', error);
