@@ -69,7 +69,10 @@
     <div class="form-group">
         <label for="token">Token (OTP):</label>
         <!-- OtpInput component updates the local token variable -->
-        <OtpInput on:input={(e) => (token = e.detail)} />
+        <OtpInput
+            on:input={(e) => (token = e.detail)}
+            on:complete={handleSubmit}
+        />
     </div>
 
     {#if message}
@@ -77,7 +80,9 @@
     {/if}
 
     <div class="actions">
+        <!--
         <button class="login-btn" type="submit">Accedi</button>
+        -->
         <a href="/" class="back-btn" on:click={resettaUser}>← Torna alle Note</a
         >
     </div>
