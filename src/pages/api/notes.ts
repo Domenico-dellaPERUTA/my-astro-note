@@ -1,6 +1,7 @@
 // src/pages/api/notes.ts
 import type { APIRoute } from 'astro';
 import { notesDb } from '../../db/mysql';
+import { isAdmin } from '../../lib/auth';
 
 export const GET: APIRoute = async () => {
     try {
@@ -16,7 +17,15 @@ export const GET: APIRoute = async () => {
     }
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
+    // Controllo sicurezza lato server
+    if (!isAdmin(cookies)) {
+        return new Response(JSON.stringify({ error: 'Accesso non autorizzato' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
     try {
         console.log('request', request);
         const { title, content, parentId } = await request.json();

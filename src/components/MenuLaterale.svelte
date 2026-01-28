@@ -10,6 +10,7 @@
     notes,
     message,
     isEdit,
+    userRole,
     type Nota,
   } from "../stores/notesStore";
   import { onMount } from "svelte";
@@ -130,9 +131,11 @@
 <aside class="menu-laterale">
   <h2>
     {titolo}
-    <button on:click={() => aggiungiVoce()} title="Nuova nota radice">
-      ➕
-    </button>
+    {#if $userRole === "admin"}
+      <button on:click={() => aggiungiVoce()} title="Nuova nota radice">
+        ➕
+      </button>
+    {/if}
   </h2>
   <ul>
     {#each listaAlbero as rootNote (rootNote.id)}

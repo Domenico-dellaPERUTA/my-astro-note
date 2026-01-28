@@ -4,7 +4,26 @@ import { writable } from 'svelte/store';
 /* ---------[ Stato ]----------------------------------------------- */
 
 // stato delle note in modifica o visualizzazione
+// stato delle note in modifica o visualizzazione
 export const isEdit = writable(false);
+
+// Vista corrente: 'notes' o 'login'
+export type ViewState = 'notes' | 'login';
+export const currentView = writable<ViewState>('notes');
+
+// Ruolo utente: 'guest' o 'admin'
+export type UserRole = 'guest' | 'admin';
+
+// Inizializza dal localStorage se disponibile (solo lato client)
+const initialRole: UserRole = (typeof window !== 'undefined' && localStorage.getItem('userRole') as UserRole) || 'guest';
+export const userRole = writable<UserRole>(initialRole);
+
+// Registra i cambiamenti nel localStorage
+if (typeof window !== 'undefined') {
+    userRole.subscribe(val => {
+        localStorage.setItem('userRole', val);
+    });
+}
 
 /* ---------[ Messaggi ]-------------------------------------------- */
 // Tipo di messaggio per notifiche all'utente

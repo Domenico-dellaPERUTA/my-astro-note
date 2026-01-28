@@ -1,0 +1,118 @@
+---
+import Layout from "../layouts/Layout.astro";
+import LoginForm from "../components/LoginForm.svelte";
+---
+
+<Layout>
+    <div class="login-container">
+        <div class="login-card">
+            <h2>Accesso Utente</h2>
+
+            <LoginForm client:load />
+        </div>
+    </div>
+</Layout>
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: var(--bg-paper);
+        background-image: radial-gradient(#d0c9b6 2px, transparent 2px);
+        background-size: 30px 30px;
+    }
+
+    .login-card {
+        background-color: #fffcf0;
+        padding: 40px;
+        border-radius: 2px;
+        box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+        border: 1px solid #ccc;
+        font-family: var(--font-main);
+    }
+
+    h2 {
+        text-align: center;
+        margin-top: 0;
+        border-bottom: 2px solid var(--text-ink);
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        font-family: var(--font-main);
+        font-size: 1.1rem;
+        border: none;
+        border-bottom: 2px dashed #999;
+        background: transparent;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    input:focus {
+        border-bottom-color: var(--highlight);
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 30px;
+        text-align: center;
+    }
+
+    button {
+        padding: 12px;
+        font-family: var(--font-main);
+        font-size: 1rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        cursor: pointer;
+        border: 1px solid #999;
+        background: transparent;
+        transition: all 0.2s;
+    }
+
+    .login-btn {
+        background-color: var(--sidebar-bg);
+        color: #fff;
+        border: none;
+    }
+
+    .login-btn:hover {
+        background-color: #000;
+    }
+
+    .back-btn {
+        color: #666;
+        font-size: 0.9rem;
+        text-decoration: none;
+        font-family: var(--font-main);
+    }
+
+    .back-btn:hover {
+        text-decoration: underline;
+        color: #333;
+    }
+</style>

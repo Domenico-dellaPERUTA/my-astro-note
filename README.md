@@ -81,8 +81,15 @@ CREATE TABLE IF NOT EXISTS notes (
   FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE CASCADE
 );
 
--- (Opzionale) Inserisci una nota di prova
-INSERT INTO notes (title, content) VALUES ('Benvenuto', 'Questa è la tua prima nota in **Markdown**!');
+-- Crea la tabella 'users'
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
 ```
 
 ### Aggiornamento Schema esistente (Migrations)

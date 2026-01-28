@@ -13,7 +13,7 @@
         isEdit,
         type Nota,
     } from "../stores/notesStore";
-    import { renderMarkdown } from "../utils/markdown";
+    import { renderMarkdown } from "../lib/markdown";
 
     $: titolo = $notes.at($selectedNoteIndex)?.title ?? "";
     $: testo = $notes.at($selectedNoteIndex)?.content ?? "";

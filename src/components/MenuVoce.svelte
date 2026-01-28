@@ -1,7 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
     import { slide } from "svelte/transition";
-    import type { Nota } from "../stores/notesStore";
+    import { userRole, type Nota } from "../stores/notesStore";
 
     export let nota: Nota;
     export let indiceSelezionato: number;
@@ -39,37 +39,39 @@
             {nota.title}
         </button>
 
-        <div class="actions">
-            <!-- Pulsante Aggiungi Sotto-nota -->
-            <button
-                type="button"
-                class="action-btn add-child"
-                title="Aggiungi sotto-nota"
-                on:click|stopPropagation={() => dispatch("add-child", nota)}
-            >
-                ➕
-            </button>
+        {#if $userRole === "admin"}
+            <div class="actions">
+                <!-- Pulsante Aggiungi Sotto-nota -->
+                <button
+                    type="button"
+                    class="action-btn add-child"
+                    title="Aggiungi sotto-nota"
+                    on:click|stopPropagation={() => dispatch("add-child", nota)}
+                >
+                    ➕
+                </button>
 
-            <!-- Pulsante Modifica -->
-            <button
-                type="button"
-                class="action-btn edit"
-                title="Modifica"
-                on:click|stopPropagation={() => dispatch("edit", nota)}
-            >
-                ✏️
-            </button>
+                <!-- Pulsante Modifica -->
+                <button
+                    type="button"
+                    class="action-btn edit"
+                    title="Modifica"
+                    on:click|stopPropagation={() => dispatch("edit", nota)}
+                >
+                    ✏️
+                </button>
 
-            <!-- Pulsante Elimina -->
-            <button
-                type="button"
-                class="action-btn delete"
-                title="Elimina"
-                on:click|stopPropagation={() => dispatch("delete", nota)}
-            >
-                🗑️
-            </button>
-        </div>
+                <!-- Pulsante Elimina -->
+                <button
+                    type="button"
+                    class="action-btn delete"
+                    title="Elimina"
+                    on:click|stopPropagation={() => dispatch("delete", nota)}
+                >
+                    🗑️
+                </button>
+            </div>
+        {/if}
     </div>
 
     <!-- Recursive Children -->
