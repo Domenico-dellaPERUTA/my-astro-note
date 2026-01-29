@@ -14,16 +14,9 @@ export const currentView = writable<ViewState>('notes');
 // Ruolo utente: 'guest' o 'admin'
 export type UserRole = 'guest' | 'admin';
 
-// Inizializza dal localStorage se disponibile (solo lato client)
-const initialRole: UserRole = (typeof window !== 'undefined' && localStorage.getItem('userRole') as UserRole) || 'guest';
-export const userRole = writable<UserRole>(initialRole);
+// Inizializza sempre come 'guest' ad ogni apertura dell'app
+export const userRole = writable<UserRole>('guest');
 
-// Registra i cambiamenti nel localStorage
-if (typeof window !== 'undefined') {
-    userRole.subscribe(val => {
-        localStorage.setItem('userRole', val);
-    });
-}
 
 /* ---------[ Messaggi ]-------------------------------------------- */
 // Tipo di messaggio per notifiche all'utente
