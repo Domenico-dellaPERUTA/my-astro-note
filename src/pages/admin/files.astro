@@ -13,7 +13,11 @@ if (!isAdmin(Astro.cookies)) {
 
 <Layout>
     <section>
-        <BarraPrincipale titolo="Gestione File & Media" client:load />
+        <BarraPrincipale
+            titolo="Gestione File & Media"
+            userRole="admin"
+            client:load
+        />
     </section>
 
     <main class="admin-container">

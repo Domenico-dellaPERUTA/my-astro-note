@@ -6,8 +6,21 @@
 
 <!-- [ Controller ] ------------------------------------------------------------------------------>
 <script lang="ts">
-  import { isEdit, userRole } from "../stores/notesStore";
+  import {
+    isEdit,
+    userRole as userRoleStore,
+    type UserRole,
+  } from "../stores/notesStore";
+  import { onMount } from "svelte";
+
   export let titolo = "Home";
+  export let userRole: UserRole | undefined = undefined;
+
+  onMount(() => {
+    if (userRole) {
+      userRoleStore.set(userRole);
+    }
+  });
 
   function apriLogin() {
     window.location.href = "/login";
@@ -19,7 +32,7 @@
   <h1>{$isEdit === true ? "✏️" : "📎"} {titolo}</h1>
 
   <div class="nav-actions">
-    {#if $userRole === "admin"}
+    {#if $userRoleStore === "admin"}
       <a href="/admin/files" class="admin-link" title="Gestione File e Media">
         📁 File
       </a>
@@ -27,8 +40,8 @@
 
     <button
       class="user-btn"
-      class:guest={$userRole === "guest"}
-      class:admin={$userRole === "admin"}
+      class:guest={$userRoleStore === "guest"}
+      class:admin={$userRoleStore === "admin"}
       on:click={apriLogin}
       title="Profilo Utente"
     >

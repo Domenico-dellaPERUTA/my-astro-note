@@ -5,14 +5,17 @@ import Annotazione from "../components/Annotazione.svelte";
 import Layout from "../layouts/Layout.astro";
 import { notesDb } from "../db/mysql";
 import Messaggio from "../components/Messaggio.svelte";
+import { isAdmin } from "../lib/auth";
 
 // Carica le note dal database lato server
 const notesData = await notesDb.getAll();
+const userIsAdmin = isAdmin(Astro.cookies);
+const role = userIsAdmin ? "admin" : "guest";
 ---
 
 <Layout>
   <section>
-    <BarraPrincipale titolo="Appunti" client:load />
+    <BarraPrincipale titolo="Appunti" userRole={role} client:load />
   </section>
 
   <div class="main-container">
