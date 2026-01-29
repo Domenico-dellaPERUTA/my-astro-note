@@ -1,7 +1,7 @@
 ---
 title: "Gestione delle Note"
 description: "Come creare, modificare ed eliminare le tue note."
-order: 2
+order: 3
 ---
 # Gestione delle Note
 

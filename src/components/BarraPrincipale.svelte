@@ -22,8 +22,18 @@
     }
   });
 
-  function apriLogin() {
-    window.location.href = "/login";
+  async function handleUserClick() {
+    if ($userRoleStore === "admin") {
+      try {
+        await fetch("/api/logout", { method: "POST" });
+        userRoleStore.set("guest");
+        window.location.href = "/";
+      } catch (e) {
+        console.error("Errore logout:", e);
+      }
+    } else {
+      window.location.href = "/login";
+    }
   }
 </script>
 
@@ -42,8 +52,8 @@
       class="user-btn"
       class:guest={$userRoleStore === "guest"}
       class:admin={$userRoleStore === "admin"}
-      on:click={apriLogin}
-      title="Profilo Utente"
+      on:click={handleUserClick}
+      title={$userRoleStore === "admin" ? "Logout Amministratore" : "Accedi"}
     >
       👤
     </button>
