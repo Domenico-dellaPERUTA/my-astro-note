@@ -15,3 +15,14 @@ Seleziona una nota dalla lista e fai clic su **📝 Modifica**. Ricordati di sal
 
 ## Eliminare una nota
 Fai clic sull'icona **🗑️** per eliminare una nota. **Attenzione**: l'eliminazione di una nota eliminerà anche tutte le sue "figlie".
+
+## Gestione Media (Immagini e File)
+Se sei un amministratore, puoi gestire i file multimediali tramite il pulsante **📁 File** nella barra superiore.
+
+1. **Caricamento**: Puoi caricare immagini o documenti nella cartella `WebApp`.
+2. **Organizzazione**: Crea cartelle per tenere in ordine i tuoi file.
+3. **Inserimento nelle Note**: 
+   - Nel File Manager, clicca sull'icona della catena **🔗** accanto a un file per copiare negli appunti il codice Markdown.
+   - Incolla questo codice nel testo della tua nota per visualizzare il file (es: `![immagine](/WebApp/foto.jpg)`).
+4. **Modifica**: Puoi rinominare o eliminare i file direttamente dal gestore.
+

@@ -228,6 +228,15 @@
         width: 100%;
     }
 
+    .testo :global(img) {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 1rem 0;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        border: 1px solid #ddd;
+    }
+
     textarea {
         background-color: #ffffff; /* Explicit white background */
         border: 1px solid #ccc;

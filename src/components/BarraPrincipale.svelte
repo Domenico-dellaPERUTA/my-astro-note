@@ -18,15 +18,23 @@
 <nav class="barra-principale">
   <h1>{$isEdit === true ? "✏️" : "📎"} {titolo}</h1>
 
-  <button
-    class="user-btn"
-    class:guest={$userRole === "guest"}
-    class:admin={$userRole === "admin"}
-    on:click={apriLogin}
-    title="Profilo Utente"
-  >
-    👤
-  </button>
+  <div class="nav-actions">
+    {#if $userRole === "admin"}
+      <a href="/admin/files" class="admin-link" title="Gestione File e Media">
+        📁 File
+      </a>
+    {/if}
+
+    <button
+      class="user-btn"
+      class:guest={$userRole === "guest"}
+      class:admin={$userRole === "admin"}
+      on:click={apriLogin}
+      title="Profilo Utente"
+    >
+      👤
+    </button>
+  </div>
 </nav>
 
 <!-- [ Style ] ---------------------------------------------------------------------------------->
@@ -74,6 +82,30 @@
   .guest {
     color: #4caf50;
     border-color: #4caf50;
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .admin-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.9rem;
+    padding: 5px 12px;
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .admin-link:hover {
+    background: var(--highlight);
+    border-color: #fff;
+    transform: translateY(-2px);
   }
 
   /* Admin Role - Red */

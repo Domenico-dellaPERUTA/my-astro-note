@@ -1,0 +1,71 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import GestoreFile from "../../components/GestoreFile.svelte";
+import BarraPrincipale from "../../components/BarraPrincipale.svelte";
+import Messaggio from "../../components/Messaggio.svelte";
+import { isAdmin } from "../../lib/auth";
+
+// Controllo sicurezza lato server
+if (!isAdmin(Astro.cookies)) {
+    return Astro.redirect("/login");
+}
+---
+
+<Layout>
+    <section>
+        <BarraPrincipale titolo="Gestione File & Media" client:load />
+    </section>
+
+    <main class="admin-container">
+        <header class="admin-header">
+            <a href="/" class="back-link">← Torna alle Note</a>
+            <h2>Area Riservata: Gestione Asset</h2>
+            <p>
+                Qui puoi caricare immagini e gestire documenti per le tue note.
+            </p>
+        </header>
+
+        <section class="admin-content">
+            <Messaggio client:load />
+            <GestoreFile client:load />
+        </section>
+    </main>
+</Layout>
+
+<style>
+    .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .admin-header {
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #333;
+        padding-bottom: 1rem;
+    }
+
+    .back-link {
+        color: var(--highlight);
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 2rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    p {
+        color: #666;
+        font-style: italic;
+    }
+
+    .admin-content {
+        margin-top: 2rem;
+    }
+</style>
