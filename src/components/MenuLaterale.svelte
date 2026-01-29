@@ -149,6 +149,10 @@
       />
     {/each}
   </ul>
+
+  <div class="guida-link-container">
+    <a href="/guida" class="guida-link"> 📖 Guida ed Help </a>
+  </div>
 </aside>
 
 <!-- [ Style ] ---------------------------------------------------------------------------------->
@@ -206,5 +210,31 @@
   ul {
     list-style-type: none;
     padding: 0;
+  }
+
+  .guida-link-container {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-top: 1px solid #444;
+  }
+
+  .guida-link {
+    display: block;
+    padding: 0.8rem;
+    background-color: #3d3d3d;
+    color: #f4ecd8;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 4px;
+    border: 1px solid #555;
+    transition: all 0.2s;
+    font-weight: bold;
+  }
+
+  .guida-link:hover {
+    background-color: #4d4d4d;
+    border-color: var(--highlight);
+    color: var(--highlight);
+    transform: translateY(-2px);
   }
 </style>
