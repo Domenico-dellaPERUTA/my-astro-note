@@ -14,10 +14,10 @@ export default defineConfig({
     vite: {
         server: {
             fs: {
-                // Permette a Vite di accedere alla cartella WebApp fuori dal progetto
+                // Permette a Vite di accedere alla cartella WebApp assoluta
                 allow: [
                     path.resolve(process.cwd()),
-                    path.resolve(process.cwd(), '..', 'WebApp')
+                    '/Library/WebServer/WebApp'
                 ]
             }
         },
@@ -29,7 +29,7 @@ export default defineConfig({
                     server.middlewares.use((req, res, next) => {
                         if (req.url?.startsWith('/WebApp/')) {
                             const relativePath = req.url.replace('/WebApp/', '');
-                            const filePath = path.resolve(process.cwd(), '..', 'WebApp', relativePath);
+                            const filePath = path.join('/Library/WebServer/WebApp', relativePath);
 
                             if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
                                 res.setHeader('Content-Type', 'image/auto'); // Semplificato
@@ -44,4 +44,3 @@ export default defineConfig({
         ]
     }
 });
-

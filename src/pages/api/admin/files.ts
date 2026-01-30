@@ -3,8 +3,8 @@ import { isAdmin } from '../../../lib/auth';
 import fs from 'fs/promises';
 import path from 'path';
 
-// Cartella base per i file (esterna al progetto)
-const BASE_DIR = path.resolve(process.cwd(), '..', 'WebApp');
+// Cartella base per i file (percorso assoluto condiviso con Apache)
+const BASE_DIR = '/Library/WebServer/WebApp';
 
 // Helper per risolvere il percorso in modo sicuro (evita path traversal)
 function safePath(relative: string = '') {
