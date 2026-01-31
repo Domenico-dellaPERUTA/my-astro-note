@@ -13,17 +13,54 @@
     userRole,
     type Nota,
   } from "../stores/notesStore";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import MenuVoce from "./MenuVoce.svelte";
 
   export let titolo = "Lista Note";
   export let initialNotes: Nota[] = [];
 
+  // Flag per indicare che lo stato è stato ripristinato e il salvataggio può iniziare
+  let restored = false;
+
   onMount(() => {
+    // 1. Inizializza le note se fornite
     if (initialNotes.length > 0) {
       notes.set(initialNotes);
     }
+
+    // 2. Ripristina lo stato dalla sessione (se esiste)
+    const savedId = sessionStorage.getItem("lastSelectedNoteId");
+    if (savedId && initialNotes.length > 0) {
+      const idx = initialNotes.findIndex((n) => n.id.toString() === savedId);
+      if (idx !== -1) {
+        selectedNoteIndex.set(idx);
+      }
+    }
+
+    const savedIsEdit = sessionStorage.getItem("lastIsEdit");
+    if (savedIsEdit === "true") {
+      isEdit.set(true);
+    }
+
+    // 3. Dopo il ripristino, abilita il salvataggio automatico
+    restored = true;
   });
+
+  // Reactive statements per il salvataggio automatico in sessionStorage
+  // Questi si attivano solo dopo che lo stato è stato ripristinato (restored = true)
+  $: if (restored && $notes.length > 0) {
+    const note = $notes[$selectedNoteIndex];
+    if (note) {
+      sessionStorage.setItem("lastSelectedNoteId", note.id.toString());
+    } else {
+      // Se non c'è una nota selezionata valida, rimuovi l'ID salvato
+      sessionStorage.removeItem("lastSelectedNoteId");
+    }
+  }
+
+  $: if (restored && typeof window !== "undefined") {
+    sessionStorage.setItem("lastIsEdit", $isEdit.toString());
+  }
 
   // Converte la lista delle note in una struttura ad albero
   $: listaAlbero = creaAlberoNote($notes);

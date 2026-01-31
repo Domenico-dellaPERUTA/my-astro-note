@@ -265,13 +265,55 @@
                                     title="Copia link Markdown"
                                     on:click={() => {
                                         const url = `/WebApp/${file.path}`;
-                                        navigator.clipboard.writeText(
-                                            `![${file.name}](${url})`,
-                                        );
-                                        message.set({
-                                            text: "Link Markdown copiato!",
-                                            type: "success",
-                                        });
+                                        const textToCopy = `![${file.name}](${url})`;
+
+                                        if (
+                                            navigator.clipboard &&
+                                            window.isSecureContext
+                                        ) {
+                                            navigator.clipboard
+                                                .writeText(textToCopy)
+                                                .then(() =>
+                                                    message.set({
+                                                        text: "Link Markdown copiato!",
+                                                        type: "success",
+                                                    }),
+                                                )
+                                                .catch((err) => {
+                                                    console.error(
+                                                        "Clipboard non disponibile",
+                                                        err,
+                                                    ); // Fallback
+                                                    fallbackCopy(textToCopy);
+                                                });
+                                        } else {
+                                            fallbackCopy(textToCopy);
+                                        }
+
+                                        function fallbackCopy(text: string) {
+                                            const textArea =
+                                                document.createElement(
+                                                    "textarea",
+                                                );
+                                            textArea.value = text;
+                                            textArea.style.position = "fixed";
+                                            document.body.appendChild(textArea);
+                                            textArea.focus();
+                                            textArea.select();
+                                            try {
+                                                document.execCommand("copy");
+                                                message.set({
+                                                    text: "Link Markdown copiato!",
+                                                    type: "success",
+                                                });
+                                            } catch (err) {
+                                                message.set({
+                                                    text: "Impossibile copiare il link",
+                                                    type: "error",
+                                                });
+                                            }
+                                            document.body.removeChild(textArea);
+                                        }
                                     }}>🔗</button
                                 >
                             {/if}

@@ -4,8 +4,9 @@ import { writable } from 'svelte/store';
 /* ---------[ Stato ]----------------------------------------------- */
 
 // stato delle note in modifica o visualizzazione
-// stato delle note in modifica o visualizzazione
-export const isEdit = writable(false);
+// Inizializza leggendo dalla sessione se possibile
+const initialIsEdit = typeof window !== 'undefined' && sessionStorage.getItem('lastIsEdit') === 'true';
+export const isEdit = writable(initialIsEdit);
 
 // Vista corrente: 'notes' o 'login'
 export type ViewState = 'notes' | 'login';
@@ -35,7 +36,7 @@ export const message = writable<Message>({
 
 /* ---------[ Note ]------------------------------------------------ */
 
-//indice della nota selezionata
+// indice della nota selezionata
 export const selectedNoteIndex = writable(0);
 
 export type Nota = {
@@ -49,6 +50,7 @@ export type Nota = {
 };
 // store delle note
 export const notes = writable<Nota[]>([]);
+
 
 /* ---------[ Funzioni Note/DB ]------------------------------------ */
 
