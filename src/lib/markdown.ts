@@ -20,9 +20,30 @@ export async function renderMarkdown(content: string): Promise<string> {
     // Replace tabs with 4 non-breaking spaces and double spaces with 2 non-breaking spaces
     const contentWithTabs = content;
 
-    // Custom syntax: ++underline++ -> <u>underline</u>
-    const contentWithUnderline = contentWithTabs.replace(/\+\+(.*?)\+\+/g, '<u>$1</u>');
+    // Configure marked with custom underline extension
+    marked.use({
+        extensions: [{
+            name: 'underline',
+            level: 'inline',
+            start(src: any) { return src.match(/\+\+/)?.index; },
+            tokenizer(src: any, tokens: any) {
+                const rule = /^\+\+(.*?)\+\+/;
+                const match = rule.exec(src);
+                if (match) {
+                    return {
+                        type: 'underline',
+                        raw: match[0],
+                        text: match[1].trim(),
+                        tokens: (this as any).lexer.inlineTokens(match[1].trim())
+                    };
+                }
+            },
+            renderer(token: any) {
+                return `<u>${(this as any).parser.parseInline(token.tokens)}</u>`;
+            }
+        }]
+    } as any);
 
-    const rawHtml = await marked.parse(contentWithUnderline, { breaks: true });
+    const rawHtml = await marked.parse(contentWithTabs, { breaks: true });
     return purify.sanitize(rawHtml as string);
 }
