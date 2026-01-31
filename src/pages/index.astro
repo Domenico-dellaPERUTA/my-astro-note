@@ -11,6 +11,9 @@ import { isAdmin } from "../lib/auth";
 const notesData = await notesDb.getAll();
 const userIsAdmin = isAdmin(Astro.cookies);
 const role = userIsAdmin ? "admin" : "guest";
+
+// Gestione deep linking
+const urlId = Astro.url.searchParams.get("id");
 ---
 
 <Layout>
@@ -20,7 +23,12 @@ const role = userIsAdmin ? "admin" : "guest";
 
   <div class="main-container">
     <aside class="sidebar">
-      <MenuLaterale titolo="Lista Note" initialNotes={notesData} client:load />
+      <MenuLaterale
+        titolo="Lista Note"
+        initialNotes={notesData}
+        initialId={urlId}
+        client:load
+      />
     </aside>
 
     <main class="content-area">

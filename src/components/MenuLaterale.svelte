@@ -18,48 +18,94 @@
 
   export let titolo = "Lista Note";
   export let initialNotes: Nota[] = [];
+  export let initialId: string | null = null;
 
   // Flag per indicare che lo stato è stato ripristinato e il salvataggio può iniziare
   let restored = false;
 
   onMount(() => {
-    // 1. Inizializza le note se fornite
-    if (initialNotes.length > 0) {
-      notes.set(initialNotes);
-    }
-
-    // 2. Ripristina lo stato dalla sessione (se esiste)
-    const savedId = sessionStorage.getItem("lastSelectedNoteId");
-    if (savedId && initialNotes.length > 0) {
-      const idx = initialNotes.findIndex((n) => n.id.toString() === savedId);
-      if (idx !== -1) {
-        selectedNoteIndex.set(idx);
+    try {
+      // 1. Inizializza le note se fornite
+      if (initialNotes.length > 0) {
+        notes.set(initialNotes);
       }
-    }
 
-    const savedIsEdit = sessionStorage.getItem("lastIsEdit");
-    if (savedIsEdit === "true") {
-      isEdit.set(true);
-    }
+      // 2. Ripristina lo stato
+      let idToRestore = null;
 
-    // 3. Dopo il ripristino, abilita il salvataggio automatico
-    restored = true;
+      // Lettura lato client (più robusta per SPA/Static/Apache)
+      const urlParams = new URLSearchParams(window.location.search);
+      const clientUrlId = urlParams.get("id");
+
+      // Helper per sessionStorage sicuro (Firefox può lanciare errori in modalità privacy)
+      const getSession = (key: string) => {
+        try {
+          return sessionStorage.getItem(key);
+        } catch (e) {
+          return null;
+        }
+      };
+
+      const sessionLastId = getSession("lastSelectedNoteId");
+
+      if (clientUrlId) {
+        // Priorità 0: URL Client (vince su tutto perché è quello che l'utente vede)
+        idToRestore = clientUrlId;
+      } else if (initialId) {
+        // Priorità 1: URL Server (se passato)
+        idToRestore = initialId;
+      } else {
+        // Priorità 2: Sessione
+        idToRestore = sessionLastId;
+      }
+
+      if (idToRestore && initialNotes.length > 0) {
+        const idx = initialNotes.findIndex(
+          (n) => n.id.toString() === idToRestore,
+        );
+        if (idx !== -1) {
+          selectedNoteIndex.set(idx);
+        }
+      }
+
+      const savedIsEdit = getSession("lastIsEdit");
+      if (savedIsEdit === "true") {
+        isEdit.set(true);
+      }
+
+      // 3. Dopo il ripristino, abilita il salvataggio automatico
+      restored = true;
+    } catch (err: any) {
+      console.error("Error in onMount:", err);
+    }
   });
 
-  // Reactive statements per il salvataggio automatico in sessionStorage
-  // Questi si attivano solo dopo che lo stato è stato ripristinato (restored = true)
+  // Reactive statements per il salvataggio automatico in sessionStorage e aggiornamento URL
   $: if (restored && $notes.length > 0) {
     const note = $notes[$selectedNoteIndex];
     if (note) {
-      sessionStorage.setItem("lastSelectedNoteId", note.id.toString());
+      const noteId = note.id.toString();
+      try {
+        sessionStorage.setItem("lastSelectedNoteId", noteId);
+      } catch (e) {}
+
+      // Aggiorna URL senza ricaricare la pagina
+      if (typeof window !== "undefined") {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set("id", noteId);
+        window.history.pushState({}, "", newUrl.toString());
+      }
     } else {
-      // Se non c'è una nota selezionata valida, rimuovi l'ID salvato
-      sessionStorage.removeItem("lastSelectedNoteId");
+      try {
+        sessionStorage.removeItem("lastSelectedNoteId");
+      } catch (e) {}
     }
   }
 
   $: if (restored && typeof window !== "undefined") {
-    sessionStorage.setItem("lastIsEdit", $isEdit.toString());
+    try {
+      sessionStorage.setItem("lastIsEdit", $isEdit.toString());
+    } catch (e) {}
   }
 
   // Converte la lista delle note in una struttura ad albero
@@ -174,6 +220,7 @@
       </button>
     {/if}
   </h2>
+
   <ul>
     {#each listaAlbero as rootNote (rootNote.id)}
       <MenuVoce

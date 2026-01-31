@@ -4,8 +4,16 @@ import { writable } from 'svelte/store';
 /* ---------[ Stato ]----------------------------------------------- */
 
 // stato delle note in modifica o visualizzazione
-// Inizializza leggendo dalla sessione se possibile
-const initialIsEdit = typeof window !== 'undefined' && sessionStorage.getItem('lastIsEdit') === 'true';
+// stato delle note in modifica o visualizzazione
+// Inizializza leggendo dalla sessione se possibile (safe mode per Firefox)
+let initialIsEdit = false;
+if (typeof window !== 'undefined') {
+    try {
+        initialIsEdit = sessionStorage.getItem('lastIsEdit') === 'true';
+    } catch (e) {
+        console.warn('SessionStorage non disponibile (Firefox strict mode?):', e);
+    }
+}
 export const isEdit = writable(initialIsEdit);
 
 // Vista corrente: 'notes' o 'login'
