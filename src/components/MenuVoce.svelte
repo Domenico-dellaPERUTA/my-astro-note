@@ -8,7 +8,7 @@
     export let livello = 0;
 
     const dispatch = createEventDispatcher();
-    let expanded = true;
+    let expanded = false;
 
     function toggleExpand() {
         expanded = !expanded;
