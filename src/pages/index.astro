@@ -45,7 +45,8 @@ const urlId = Astro.url.searchParams.get("id");
     background-color: var(--bg-paper);
   }
   .sidebar {
-    width: 22rem; /* Slightly narrower */
+    width: 25vw; /* Circa 1/4 dello schermo */
+    min-width: 250px; /* Evita che diventi troppo stretta su schermi piccoli */
     background-color: var(--sidebar-bg);
     border-right: 1px solid #111;
     overflow-y: auto;

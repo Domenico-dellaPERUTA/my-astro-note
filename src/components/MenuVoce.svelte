@@ -1,7 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
     import { slide } from "svelte/transition";
-    import { userRole, type Nota } from "../stores/notesStore";
+    import { userRole, isEdit, message, type Nota } from "../stores/notesStore";
 
     export let nota: Nota;
     export let indiceSelezionato: number;
@@ -12,6 +12,17 @@
 
     function toggleExpand() {
         expanded = !expanded;
+    }
+
+    async function copiaLink(notaTarget: Nota) {
+        const link = `[${notaTarget.title}](/?id=${notaTarget.id})`;
+        try {
+            await navigator.clipboard.writeText(link);
+            message.set({ text: "Link copiato: " + link, type: "success" });
+        } catch (err) {
+            console.error("Errore copia:", err);
+            message.set({ text: "Impossibile copiare il link", type: "error" });
+        }
     }
 
     // Calculate indentation based on level
@@ -50,6 +61,18 @@
                 >
                     ➕
                 </button>
+
+                <!-- Pulsante Copia Link (Solo in Edit Mode) -->
+                {#if $isEdit}
+                    <button
+                        type="button"
+                        class="action-btn copy-link"
+                        title="Copia Link Markdown"
+                        on:click|stopPropagation={() => copiaLink(nota)}
+                    >
+                        🔗
+                    </button>
+                {/if}
 
                 <!-- Pulsante Modifica -->
                 <button
