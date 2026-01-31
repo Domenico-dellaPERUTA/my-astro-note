@@ -155,10 +155,14 @@
     }
 
     .selected {
-        color: #fff !important;
-        text-decoration: underline;
-        text-decoration-color: #d45d5d;
-        text-decoration-thickness: 3px;
+        background-color: #d45d5d;
+        color: #1a1a1a !important;
+        font-family: "Courier New", Courier, monospace; /* Tocco typewriter */
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 2px;
+        border: 1px solid #a34646; /* Bordo leggermente più scuro per profondità */
+        box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .actions {
