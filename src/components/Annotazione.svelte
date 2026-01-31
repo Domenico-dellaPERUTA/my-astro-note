@@ -88,6 +88,7 @@
                         <li><i>*Italic*</i></li>
                         <li># Header 1</li>
                         <li>## Header 2</li>
+                        <li>++Underline++</li>
                         <li>- List item</li>
                         <li>[Link](url)</li>
                         <li>`Code`</li>
@@ -235,6 +236,16 @@
         margin: 1rem 0;
         box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
         border: 1px solid #ddd;
+    }
+
+    /* Stile corsivo "a mano" per il testo enfatizzato */
+    .testo :global(em),
+    .testo :global(i) {
+        font-family: "Brush Script MT", "Brush Script Std", "Lucida Calligraphy",
+            "Lucida Handwriting", "Apple Chancery", cursive;
+        font-size: 1.7rem; /* Leggermente più grande perché questi font sono spesso piccoli */
+        color: #4e73ab;
+        font-style: normal; /* Il font è già "storto", non serve inclinare */
     }
 
     textarea {

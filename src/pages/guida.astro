@@ -139,4 +139,15 @@ const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
     .article-inner :global(strong) {
         color: var(--highlight);
     }
+
+    /* Stile corsivo "a mano" per il testo enfatizzato nella guida */
+    .article-inner :global(em),
+    .article-inner :global(i) {
+        font-family:
+            "Brush Script MT", "Brush Script Std", "Lucida Calligraphy",
+            "Lucida Handwriting", "Apple Chancery", cursive;
+        font-size: 1.3rem;
+        color: #555;
+        font-style: normal;
+    }
 </style>
