@@ -13,15 +13,94 @@
         isEdit,
         type Nota,
     } from "../stores/notesStore";
+    import Quiz from "./Quiz.svelte";
+    import { mount } from "svelte";
     import { renderMarkdown } from "../lib/markdown";
 
     $: titolo = $notes.at($selectedNoteIndex)?.title ?? "";
     $: testo = $notes.at($selectedNoteIndex)?.content ?? "";
+    $: tipo = $notes.at($selectedNoteIndex)?.type ?? "note";
 
     let html = "";
     $: renderMarkdown(testo).then((res) => (html = res));
 
-    async function saveNote(params: { title: string; content: string }) {
+    const QUIZ_TEMPLATE = `:::quiz Esame di Storia Digitale
+::time 2min
+::ok 1
+::error -0.5
+::null 0
+
+? Qual è il componente principale di questa applicazione?
+- [ ] React
+- [x] Astro + Svelte
+- [ ] Vue.js
+
+? Come si chiama lo stile grafico utilizzato?
+- [ ] Material Design
+- [ ] Glassmorphism
+- [x] Retro Typewriter
+:::`;
+
+    function handleTypeChange(e: Event) {
+        const newType = (e.target as HTMLSelectElement).value as
+            | "note"
+            | "quiz";
+        tipo = newType;
+        if (newType === "quiz" && (!testo || testo.trim() === "")) {
+            testo = QUIZ_TEMPLATE;
+        }
+    }
+
+    function mountQuizzes(node: HTMLElement, content: string) {
+        const update = () => {
+            const placeholders = node.querySelectorAll(".quiz-placeholder");
+            // console.log("MountQuizzes: trovati", placeholders.length, "placeholder");
+
+            placeholders.forEach((element) => {
+                const ph = element as HTMLElement;
+                if (ph.getAttribute("data-mounted")) return;
+                const dataStr = ph.getAttribute("data-quiz");
+                console.log("Placeholder quiz trovato!");
+                if (dataStr) {
+                    try {
+                        const decoded = decodeURIComponent(atob(dataStr));
+                        const quizData = JSON.parse(decoded);
+                        console.log(
+                            "Tentativo mounting quiz (Svelte 5):",
+                            quizData.title,
+                        );
+
+                        mount(Quiz, {
+                            target: ph,
+                            props: { quiz: quizData },
+                        });
+                        ph.setAttribute("data-mounted", "true");
+                        // Rimuovi lo stile di debug una volta montato
+                        ph.style.minHeight = "0";
+                        ph.style.border = "none";
+                        ph.style.backgroundColor = "transparent";
+                    } catch (e) {
+                        console.error("Errore mounting quiz component:", e);
+                    }
+                }
+            });
+        };
+
+        // Esegui subito e al cambio contenuto
+        setTimeout(update, 50);
+
+        return {
+            update() {
+                setTimeout(update, 50);
+            },
+        };
+    }
+
+    async function saveNote(params: {
+        title: string;
+        content: string;
+        type: "note" | "quiz";
+    }) {
         if ($selectedNoteIndex === -1) return;
 
         const noteId = $notes[$selectedNoteIndex]?.id;
@@ -41,7 +120,7 @@
                 throw new Error(errorMessage);
             } else {
                 message.set({
-                    text: `Nota "${params.title}" salvata con successo!`,
+                    text: `${params.type === "quiz" ? "Quiz" : "Nota"} "${params.title}" salvata con successo!`,
                     type: "success",
                 });
                 isEdit.set(false);
@@ -54,6 +133,7 @@
                     ...updatedNotes[$selectedNoteIndex],
                     title: params.title,
                     content: params.content,
+                    type: params.type,
                 };
                 return updatedNotes;
             });
@@ -70,29 +150,53 @@
     <form
         class="annotazione"
         on:submit|preventDefault={() =>
-            saveNote({ title: titolo, content: testo })}
+            saveNote({ title: titolo, content: testo, type: tipo })}
     >
-        <label for="titolo">Titolo:</label>
-        <div>
-            <input type="text" id="titolo" bind:value={titolo} />
+        <div class="header-edit">
+            <div class="field">
+                <label for="titolo">Titolo:</label>
+                <input type="text" id="titolo" bind:value={titolo} />
+            </div>
+            <div class="field type-selector">
+                <label for="tipo">Tipo:</label>
+                <select id="tipo" value={tipo} on:change={handleTypeChange}>
+                    <option value="note">📝 Nota</option>
+                    <option value="quiz">❓ Quiz</option>
+                </select>
+            </div>
         </div>
+
         <label for="testo">Testo (Markdown):</label>
         <div class="editor-container">
             <textarea id="testo" bind:value={testo}></textarea>
             <div class="sidebar-tools">
-                <button class="save" type="submit">💾 SALVA NOTA</button>
+                <button class="save" type="submit"
+                    >💾 SALVA {tipo === "quiz" ? "QUIZ" : "NOTA"}</button
+                >
                 <div class="markdown-legend">
-                    <h4>Markdown Help</h4>
+                    <h4>{tipo === "quiz" ? "Quiz Help" : "Markdown Help"}</h4>
                     <ul>
-                        <li><b>**Bold**</b></li>
-                        <li><i>*Italic*</i></li>
-                        <li># Header 1</li>
-                        <li>## Header 2</li>
-                        <li>++Underline++</li>
-                        <li>- List item</li>
-                        <li>[Link](url)</li>
-                        <li>`Code`</li>
-                        <li>```block```</li>
+                        {#if tipo === "quiz"}
+                            <li>:::quiz [Tititlo]</li>
+                            <li>::time [60s|5min]</li>
+                            <li>::ok [punti]</li>
+                            <li>::error [punti]</li>
+                            <li>::null [punti]</li>
+                            <li>? Domanda</li>
+                            <li>- [ ] Sbagliata</li>
+                            <li>- [x] Corretta</li>
+                            <li>::: (chiusura)</li>
+                        {:else}
+                            <li><b>**Bold**</b></li>
+                            <li><i>*Italic*</i></li>
+                            <li># Header 1</li>
+                            <li>## Header 2</li>
+                            <li>++Underline++</li>
+                            <li>- List item</li>
+                            <li>[Link](url)</li>
+                            <li>`Code`</li>
+                            <li>```block```</li>
+                        {/if}
                     </ul>
                 </div>
             </div>
@@ -102,7 +206,7 @@
     <div class="annotazione">
         <span class="pin">📍 </span>
         <h2>{titolo}</h2>
-        <div class="testo">{@html html}</div>
+        <div class="testo" use:mountQuizzes={html}>{@html html}</div>
     </div>
 {/if}
 
@@ -199,6 +303,32 @@
         color: #666;
     }
 
+    .header-edit {
+        display: flex;
+        gap: 20px;
+        align-items: flex-end;
+    }
+
+    .header-edit .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .header-edit .field:first-child {
+        flex: 1;
+    }
+
+    .type-selector select {
+        padding: 10px;
+        font-family: var(--font-main);
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+        border-radius: 2px;
+    }
+
     input[type="text"],
     textarea,
     .testo {
@@ -227,6 +357,14 @@
     .testo {
         border: none;
         width: 100%;
+    }
+
+    .testo :global(.quiz-placeholder) {
+        min-height: 200px;
+        background-color: rgba(0, 0, 0, 0.02);
+        border: 1px dashed #ccc;
+        margin: 20px 0;
+        display: block;
     }
 
     .testo :global(img) {

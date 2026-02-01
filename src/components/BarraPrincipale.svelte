@@ -11,6 +11,7 @@
     userRole as userRoleStore,
     type UserRole,
   } from "../stores/notesStore";
+  import { quizActiveState } from "../stores/quizStore";
   import { onMount } from "svelte";
 
   export let titolo = "Home";
@@ -35,11 +36,32 @@
       window.location.href = "/login";
     }
   }
+
+  function formatTime(s: number) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  }
 </script>
 
 <!-- [ View ] ------------------------------------------------------------------------------------>
 <nav class="barra-principale">
-  <h1>{$isEdit === true ? "✏️" : "📎"} {titolo}</h1>
+  <div class="header-left">
+    <h1>{$isEdit === true ? "✏️" : "📎"} {titolo}</h1>
+  </div>
+
+  {#if $quizActiveState.isActive}
+    <div class="quiz-status-header">
+      <div
+        class="quiz-timer {$quizActiveState.secondsLeft < 10 ? 'urgent' : ''}"
+      >
+        ⏱️ {formatTime($quizActiveState.secondsLeft)}
+      </div>
+      <div class="quiz-progress">
+        📝 {$quizActiveState.answeredCount}/{$quizActiveState.totalQuestions}
+      </div>
+    </div>
+  {/if}
 
   <div class="nav-actions">
     {#if $userRoleStore === "admin"}
@@ -135,5 +157,47 @@
   .admin {
     color: #d45d5d;
     border-color: #d45d5d;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 200px;
+  }
+
+  .quiz-status-header {
+    display: flex;
+    gap: 20px;
+    background: #1a1a1a;
+    padding: 5px 15px;
+    border: 1px solid #444;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+
+  .quiz-timer {
+    font-weight: bold;
+    color: #fff;
+  }
+
+  .quiz-timer.urgent {
+    color: #ff5252;
+    animation: pulse 1s infinite alternate;
+  }
+
+  @keyframes pulse {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.5;
+    }
+  }
+
+  .quiz-progress {
+    color: #ffc107;
+    font-weight: bold;
   }
 </style>

@@ -105,13 +105,15 @@
             <span class="spacer"></span>
         {/if}
 
-        <!-- Titolo Nota Button -->
         <button
             type="button"
             class="title-btn {indiceSelezionato === nota.id ? 'selected' : ''}"
             style={indentStyle}
             on:click={() => dispatch("select", nota)}
         >
+            {#if nota.type === "quiz"}
+                <span class="type-icon">❓</span>
+            {/if}
             {nota.title}
         </button>
 

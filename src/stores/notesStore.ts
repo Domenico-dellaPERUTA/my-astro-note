@@ -52,6 +52,7 @@ export type Nota = {
     title: string;
     content: string;
     parent_id?: number | null;
+    type?: 'note' | 'quiz' | null;
     children?: Nota[]; // Per la visualizzazione ad albero
     created_at?: Date;
     updated_at?: Date;
@@ -82,12 +83,12 @@ export async function loadNotesFromDb() {
 }
 
 // Funzione per creare una nota
-export async function createNote(title: string, content: string, parentId?: number) {
+export async function createNote(title: string, content: string, parentId?: number, type: 'note' | 'quiz' = 'note') {
     try {
         const response = await fetch('/api/notes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, content, parentId })
+            body: JSON.stringify({ title, content, parentId, type })
         });
 
         if (!response.ok) throw new Error('Errore nella creazione della nota');

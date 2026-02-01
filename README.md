@@ -22,6 +22,7 @@ Una potente e raffinata applicazione per la gestione di note gerarchiche, caratt
 *   **🔐 Sicurezza Avanzata**:
     *   **Modalità Ospite**: Lettura sicura senza permessi di modifica.
     *   **Area Admin**: Accesso protetto da password (hash SHA-256) e **2FA (TOTP)**.
+*   **❓ Questionari Interattivi**: Crea quiz a risposta multipla con score automatico e **timer** integrato.
 *   **⚡ Performance**: Rendering lato server (SSR) con Astro per un caricamento istantaneo.
 
 ---
@@ -34,6 +35,7 @@ Una potente e raffinata applicazione per la gestione di note gerarchiche, caratt
 │   ├── components/         # Componenti UI (Svelte)
 │   │   ├── MenuLaterale.svelte   # Navigazione gerarchica
 │   │   ├── Annotazione.svelte    # Editor e Visualizzazione
+│   │   ├── Quiz.svelte           # Componente Quiz interattivo
 │   │   └── ...
 │   ├── content/docs/       # Guida utente integrata (Markdown)
 │   ├── db/                 # Logica Database (MySQL)
@@ -61,6 +63,7 @@ CREATE TABLE notes (
   title VARCHAR(255) NOT NULL,
   content LONGTEXT NOT NULL,
   parent_id INT DEFAULT NULL,
+  type VARCHAR(20) DEFAULT NULL, -- 'note' o 'quiz'
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE CASCADE
@@ -113,6 +116,27 @@ Puoi testare la build localmente con `npm run preview`.
 Il progetto include script di utility per il deployment su macOS (Apache/Launchd):
 *   `deploy.sh`: Script per automatizzare il build e lo spostamento dei file.
 *   `com.notes.astro.plist`: Configurazione per Launchd per avviare l'app come servizio.
+
+---
+
+## ❓ Sintassi Quiz
+
+Puoi creare un quiz in qualsiasi nota usando la seguente sintassi:
+
+```markdown
+:::quiz Titolo del Quiz
+::time 10min
+
+? Qual è la domanda?
+- [ ] Risposta sbagliata
+- [x] Risposta corretta
+- [ ] Altra risposta sbagliata
+:::
+```
+
+*   `::time`: Definisce il tempo limite (es. `5min`, `30s`).
+*   `?`: Inizia una domanda.
+*   `- [x]`: Indica la risposta corretta.
 
 ---
 

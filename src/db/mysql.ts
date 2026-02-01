@@ -17,6 +17,7 @@ export interface Note {
   title: string;
   content: string;
   parent_id?: number | null;
+  type?: 'note' | 'quiz' | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -47,11 +48,11 @@ export const notesDb = {
     }
   },
 
-  async create(title: string, content: string, parentId?: number): Promise<number> {
+  async create(title: string, content: string, parentId?: number, type: 'note' | 'quiz' = 'note'): Promise<number> {
     try {
       const [result] = await pool.query(
-        'INSERT INTO notes (title, content, parent_id) VALUES (?, ?, ?)',
-        [title, content, parentId || null]
+        'INSERT INTO notes (title, content, parent_id, type) VALUES (?, ?, ?, ?)',
+        [title, content, parentId || null, type]
       );
 
       console.log('Insert result:', result);
@@ -68,13 +69,25 @@ export const notesDb = {
     }
   },
 
-  async update(id: number, title: string, content: string, parentId?: number | null): Promise<void> {
+  async update(id: number, title: string, content: string, parentId?: number | null, type?: 'note' | 'quiz'): Promise<void> {
     try {
-      if (typeof parentId !== 'undefined') {
-        // Se parentId è specificato, aggiorniamo anche quello (spostamento)
+      if (typeof parentId !== 'undefined' || typeof type !== 'undefined') {
+        const fields = ['title = ?', 'content = ?', 'updated_at = NOW()'];
+        const values: any[] = [title, content];
+
+        if (typeof parentId !== 'undefined') {
+          fields.push('parent_id = ?');
+          values.push(parentId);
+        }
+        if (typeof type !== 'undefined') {
+          fields.push('type = ?');
+          values.push(type);
+        }
+        values.push(id);
+
         await pool.query(
-          'UPDATE notes SET title = ?, content = ?, parent_id = ?, updated_at = NOW() WHERE id = ?',
-          [title, content, parentId, id]
+          `UPDATE notes SET ${fields.join(', ')} WHERE id = ?`,
+          values
         );
       } else {
         // Aggiornamento standard (solo contenuto)

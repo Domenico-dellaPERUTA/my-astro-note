@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     try {
         console.log('request', request);
-        const { title, content, parentId } = await request.json();
+        const { title, content, parentId, type } = await request.json();
 
         if (!title || !content) {
             return new Response(JSON.stringify({ error: 'title e content sono obbligatori' }), {
@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             });
         }
 
-        const id = await notesDb.create(title, content, parentId);
+        const id = await notesDb.create(title, content, parentId, type);
         const newNote = await notesDb.getById(id);
 
         return new Response(JSON.stringify(newNote), {
