@@ -50,8 +50,8 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
     }
     try {
         const id = parseInt(params.id!);
-        const { title, content } = await request.json();
-        await notesDb.update(id, title, content);
+        const { title, content, parentId } = await request.json();
+        await notesDb.update(id, title, content, parentId);
 
         return new Response(JSON.stringify({ success: true }), {
             status: 200,

@@ -11,6 +11,8 @@
     message,
     isEdit,
     userRole,
+    clipboardNote,
+    loadNotesFromDb,
     type Nota,
   } from "../stores/notesStore";
   import { onDestroy, onMount } from "svelte";
@@ -208,6 +210,32 @@
       console.error(errorMessage + ":", error);
     }
   }
+
+  async function incollaRadice() {
+    const notaDaSpostare = $clipboardNote;
+    if (!notaDaSpostare) return;
+
+    try {
+      const response = await fetch(`/api/note/${notaDaSpostare.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: notaDaSpostare.title,
+          content: notaDaSpostare.content,
+          parentId: null, // Sposta alla radice
+        }),
+      });
+
+      if (!response.ok) throw new Error("Errore nello spostamento");
+
+      await loadNotesFromDb();
+      clipboardNote.set(null);
+      message.set({ text: "Nota spostata alla radice!", type: "success" });
+    } catch (error) {
+      console.error(error);
+      message.set({ text: "Errore durante lo spostamento", type: "error" });
+    }
+  }
 </script>
 
 <!-- [ View ] ------------------------------------------------------------------------------------>
@@ -215,6 +243,15 @@
   <h2>
     {titolo}
     {#if $userRole === "admin"}
+      {#if $clipboardNote}
+        <button
+          on:click={() => incollaRadice()}
+          title="Incolla come radice"
+          style="background:#4a90e2; margin-right:5px;"
+        >
+          📋
+        </button>
+      {/if}
       <button on:click={() => aggiungiVoce()} title="Nuova nota radice">
         ➕
       </button>

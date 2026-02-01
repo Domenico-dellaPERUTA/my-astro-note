@@ -1,7 +1,15 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
     import { slide } from "svelte/transition";
-    import { userRole, isEdit, message, type Nota } from "../stores/notesStore";
+    import {
+        userRole,
+        isEdit,
+        message,
+        notes,
+        clipboardNote,
+        loadNotesFromDb,
+        type Nota,
+    } from "../stores/notesStore";
 
     export let nota: Nota;
     export let indiceSelezionato: number;
@@ -24,6 +32,63 @@
             message.set({ text: "Impossibile copiare il link", type: "error" });
         }
     }
+
+    function tagliaNota(notaTarget: Nota) {
+        clipboardNote.set(notaTarget);
+        message.set({
+            text: `Nota "${notaTarget.title}" tagliata. Seleziona dove incollarla.`,
+            type: "info",
+        });
+    }
+
+    async function incollaNota(nuovoGenitore: Nota) {
+        const notaDaSpostare = $clipboardNote;
+        if (!notaDaSpostare) return;
+
+        try {
+            const response = await fetch(`/api/note/${notaDaSpostare.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: notaDaSpostare.title,
+                    content: notaDaSpostare.content,
+                    parentId: nuovoGenitore.id,
+                }),
+            });
+
+            if (!response.ok) throw new Error("Errore nello spostamento");
+
+            await loadNotesFromDb();
+            clipboardNote.set(null);
+            message.set({
+                text: "Nota spostata con successo!",
+                type: "success",
+            });
+
+            // Espandi il genitore per mostrare il figlio
+            if (!expanded) expanded = true;
+        } catch (error) {
+            console.error(error);
+            message.set({
+                text: "Errore durante lo spostamento",
+                type: "error",
+            });
+        }
+    }
+
+    // Helper per verificare se siamo dentro il sottoalbero della nota tagliata (per evitare cicli)
+    function isDescendant(parent: Nota, childId: number): boolean {
+        if (!parent.children) return false;
+        return parent.children.some(
+            (c) => c.id === childId || isDescendant(c, childId),
+        );
+    }
+
+    // Calcoliamo se il bottone Incolla è abilitato per questa voce
+    $: canPaste =
+        $clipboardNote &&
+        $clipboardNote.id !== nota.id &&
+        !isDescendant($clipboardNote, nota.id);
 
     // Calculate indentation based on level
     $: indentStyle = `padding-left: ${livello * 15 + 10}px`;
@@ -62,24 +127,58 @@
                     ➕
                 </button>
 
-                <!-- Pulsante Copia Link (Solo in Edit Mode) -->
-                {#if $isEdit}
+                <!-- Pulsante Taglia (✂️) - Solo se clipboard vuota -->
+                {#if !$clipboardNote}
                     <button
                         type="button"
-                        class="action-btn copy-link"
-                        title="Copia Link Markdown"
-                        on:click|stopPropagation={() => copiaLink(nota)}
+                        class="action-btn cut"
+                        title="Taglia (sposta)"
+                        on:click|stopPropagation={() => tagliaNota(nota)}
                     >
-                        🔗
+                        ✂️
                     </button>
                 {/if}
 
-                <!-- Pulsante Modifica -->
+                <!-- Pulsante Incolla (📋) - Solo se clipboard piena e target valido -->
+                {#if canPaste}
+                    <button
+                        type="button"
+                        class="action-btn paste"
+                        title="Incolla qui dentro"
+                        on:click|stopPropagation={() => incollaNota(nota)}
+                    >
+                        📋
+                    </button>
+                {/if}
+
+                <!-- Pulsante Copia Link -->
                 <button
                     type="button"
-                    class="action-btn edit"
-                    title="Modifica"
-                    on:click|stopPropagation={() => dispatch("edit", nota)}
+                    class="action-btn copy-link"
+                    title="Copia Link Markdown"
+                    on:click|stopPropagation={() => copiaLink(nota)}
+                >
+                    🔗
+                </button>
+
+                <!-- Pulsante Modifica (Toggle) -->
+                <button
+                    type="button"
+                    class="action-btn edit {$isEdit &&
+                    indiceSelezionato === nota.id
+                        ? 'active'
+                        : ''}"
+                    title={$isEdit && indiceSelezionato === nota.id
+                        ? "Fine Modifica"
+                        : "Modifica"}
+                    on:click|stopPropagation={() => {
+                        if ($isEdit && indiceSelezionato === nota.id) {
+                            isEdit.set(false);
+                        } else {
+                            dispatch("select", nota); // Seleziona prima
+                            dispatch("edit", nota); // Poi attiva edit
+                        }
+                    }}
                 >
                     ✏️
                 </button>
@@ -104,7 +203,7 @@
                 <svelte:self
                     nota={child}
                     {indiceSelezionato}
-                    level={livello + 1}
+                    livello={livello + 1}
                     on:select
                     on:edit
                     on:delete
@@ -202,6 +301,13 @@
 
     .delete:hover {
         filter: grayscale(0);
+        transform: scale(1.1);
+    }
+
+    .action-btn.edit.active {
+        background-color: #d45d5d;
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(212, 93, 93, 0.6);
         transform: scale(1.1);
     }
 </style>

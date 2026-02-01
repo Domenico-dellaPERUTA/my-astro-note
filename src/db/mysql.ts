@@ -68,12 +68,21 @@ export const notesDb = {
     }
   },
 
-  async update(id: number, title: string, content: string): Promise<void> {
+  async update(id: number, title: string, content: string, parentId?: number | null): Promise<void> {
     try {
-      await pool.query(
-        'UPDATE notes SET title = ?, content = ?, updated_at = NOW() WHERE id = ?',
-        [title, content, id]
-      );
+      if (typeof parentId !== 'undefined') {
+        // Se parentId è specificato, aggiorniamo anche quello (spostamento)
+        await pool.query(
+          'UPDATE notes SET title = ?, content = ?, parent_id = ?, updated_at = NOW() WHERE id = ?',
+          [title, content, parentId, id]
+        );
+      } else {
+        // Aggiornamento standard (solo contenuto)
+        await pool.query(
+          'UPDATE notes SET title = ?, content = ?, updated_at = NOW() WHERE id = ?',
+          [title, content, id]
+        );
+      }
     } catch (error) {
       console.error('Database error in update:', error);
       throw error;

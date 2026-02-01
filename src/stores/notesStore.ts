@@ -57,7 +57,11 @@ export type Nota = {
     updated_at?: Date;
 };
 // store delle note
+// store delle note
 export const notes = writable<Nota[]>([]);
+
+// store per la nota in fase di spostamento (Taglia/Incolla)
+export const clipboardNote = writable<Nota | null>(null);
 
 
 /* ---------[ Funzioni Note/DB ]------------------------------------ */
