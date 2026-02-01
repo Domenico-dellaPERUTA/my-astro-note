@@ -1,136 +1,125 @@
-# ✏️ Appunti - Note Taking App
+# ✏️ Appunti - Retro Typewriter Note App
 
-Una semplice ma elegante applicazione per prendere appunti, costruita con **Astro**, **Svelte** e **MySQL**. 
-L'app presenta un design "Retro Typewriter" con supporto completo per il **Markdown** (inclusi grassetti, corsivi, liste e blocchi di codice).
+[![Astro](https://img.shields.io/badge/Astro-BC52EE?style=for-the-badge&logo=astro&logoColor=white)](https://astro.build/)
+[![Svelte](https://img.shields.io/badge/Svelte-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)](https://svelte.dev/)
+[![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
 
-## 🚀 Caratteristiche
+Una potente e raffinata applicazione per la gestione di note gerarchiche, caratterizzata da un'estetica vintage "Retro Typewriter". Progettata per essere veloce, sicura e facile da organizzare.
 
-*   **Tema Vintage**: Interfaccia ispirata alle vecchie macchine da scrivere.
-*   **Editor Markdown**: Scrivi i tuoi appunti usando la sintassi Markdown.
-*   **Preview Istantanea**: Visualizza subito la formattazione dei tuoi testi.
-*   **Salvataggio su DB**: Le note sono persistenti grazie a MySQL.
-*   **SSR**: Rendering lato server per performance ottimali.
+---
+
+## 🚀 Caratteristiche Principali
+
+*   **🎨 Estetica Premium**: Interfaccia curata ispirata alle macchine da scrivere classiche, con font monospazio e animazioni fluide.
+*   **🌳 Struttura Gerarchica**: Organizza le tue note in alberi infiniti (cartelle e sotto-note).
+*   **✂️ Taglia e Incolla**: Sposta intere branche della tua gerarchia con un clic grazie alla funzione Move avanzata.
+*   **📝 Markdown Potenziato**: 
+    *   Sintassi standard (Grassetti, Code Blocks, Liste, etc.)
+    *   `++Sottolineato++` personalizzato.
+    *   Stile *Corsivo Handwriting* (Scrittura a mano).
+*   **🔗 Wiki Personale**: Collegamenti rapidi tra le note con supporto per il **Deep Linking** tramite URL parameters.
+*   **📁 Gestione Media**: File manager integrato per caricare immagini e documenti direttamente nelle note.
+*   **🔐 Sicurezza Avanzata**:
+    *   **Modalità Ospite**: Lettura sicura senza permessi di modifica.
+    *   **Area Admin**: Accesso protetto da password (hash SHA-256) e **2FA (TOTP)**.
+*   **⚡ Performance**: Rendering lato server (SSR) con Astro per un caricamento istantaneo.
+
+---
 
 ## 📂 Struttura del Progetto
 
 ```text
-/
-├── public/
-│   └── favicon.svg
+├── public/                 # Asset statici pubblici
 ├── src/
-│   ├── assets/
-│   ├── components/
-│   │   ├── Annotazione.svelte      # Editor note principale
-│   │   ├── BarraPrincipale.svelte  # Header dell'applicazione
-│   │   ├── MenuLaterale.svelte     # Sidebar con lista note
-│   │   └── Messaggio.svelte        # Toast di notifica
-│   ├── db/
-│   │   └── mysql.ts                # Configurazione e query MySQL
-│   ├── layouts/
-│   │   └── Layout.astro            # Layout base (CSS globali, font)
-│   ├── pages/
-│   │   ├── api/                    # API Endpoints
-│   │   └── index.astro             # Pagina principale (Appunti)
-│   ├── stores/
-│   │   └── notesStore.ts           # Gestione stato Svelte
-│   └── utils/
-│       └── markdown.ts             # Utility parsing Markdown
-├── astro.config.mjs                # Configurazione Astro
-├── package.json
-└── README.md
+│   ├── components/         # Componenti UI (Svelte)
+│   │   ├── MenuLaterale.svelte   # Navigazione gerarchica
+│   │   ├── Annotazione.svelte    # Editor e Visualizzazione
+│   │   └── ...
+│   ├── content/docs/       # Guida utente integrata (Markdown)
+│   ├── db/                 # Logica Database (MySQL)
+│   ├── lib/                # Utility (Auth, Personalizzazione Markdown)
+│   ├── pages/              # Rotte Astro e API Endpoints
+│   └── stores/             # Gestione stato (Svelte Stores)
+├── astro.config.mjs        # Configurazione Astro & Vite
+└── .env                    # Variabili d'ambiente (da creare)
 ```
 
 ---
 
-## 🛠️ Installazione e Sviluppo
+## 🛠️ Installazione e Configurazione
 
-Segui questi passaggi per installare ed eseguire l'applicazione in locale.
-
-### 1. Clona il Repository
-Scarica il codice sorgente sul tuo computer:
-```bash
-git clone <URL_DEL_TUO_REPOSITORY>
-cd my-astro
-```
-
-### 2. Installa le Dipendenze
-Installa i pacchetti necessari tramite npm:
-```bash
-npm install
-```
-
-### 3. Configura il Database (MySQL)
-Assicurati di avere un server MySQL in esecuzione. Poi crea il database e la tabella necessaria.
-
-Esegui questo script SQL nel tuo client MySQL (es. Workbench, DBeaver o riga di comando):
+### 1. Database MySQL
+L'app richiede un database MySQL. Esegui questo script per preparare l'ambiente:
 
 ```sql
--- Crea il database (se non esiste già)
 CREATE DATABASE IF NOT EXISTS appunti_db;
-
 USE appunti_db;
 
--- Crea la tabella 'notes'
-CREATE TABLE IF NOT EXISTS notes (
+-- Tabella Note (con supporto gerarchico)
+CREATE TABLE notes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   content LONGTEXT NOT NULL,
-  parent_id INT DEFAULT NULL, -- Per le note figlio
+  parent_id INT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE CASCADE
 );
 
--- Crea la tabella 'users'
-CREATE TABLE IF NOT EXISTS users (
+-- Tabella Utenti (per accesso Admin)
+CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL, -- SHA-256 del base64 della password
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-
 ```
 
-### Aggiornamento Schema esistente (Migrations)
-Se hai già creato la tabella, esegui:
-```sql
-ALTER TABLE notes ADD COLUMN parent_id INT DEFAULT NULL;
-ALTER TABLE notes ADD CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES notes(id) ON DELETE CASCADE;
-```
-
-### 4. Configura le Variabili d'Ambiente
-Crea un file `.env` nella root del progetto (copia da un esempio se disponibile o crealo da zero) e inserisci le credenziali del database:
+### 2. Configurazione `.env`
+Crea un file `.env` nella root del progetto con i seguenti parametri:
 
 ```env
+# Database
 DB_HOST=localhost
-DB_USER=il_tuo_utente_mysql
-DB_PASSWORD=la_tua_password_mysql
+DB_USER=root
+DB_PASSWORD=la_tua_password
 DB_NAME=appunti_db
 DB_PORT=3306
+
+# Autenticazione (TOTP)
+TOTP_SECRET=la_tua_chiave_privata # Cambia con una chiave Base32 sicura
 ```
 
-### 5. Avvia l'App in Sviluppo
-Ora sei pronto per lanciare il server di sviluppo:
-```bash
-npm run dev
-```
-L'app sarà disponibile all'indirizzo: [http://localhost:4321](http://localhost:4321)
+### 3. Gestione File (Configurazione Percorso)
+L'app è configurata per leggere i file multimediali da una cartella esterna (default: `/Library/WebServer/WebApp`). Puoi modificare questo percorso in `astro.config.mjs` per adattarlo al tuo sistema.
 
 ---
 
-## 📦 Build per Produzione
+## 🏃‍♂️ Sviluppo e Build
 
-Per creare la versione ottimizzata per la produzione:
+### Ambiente di Sviluppo
+1.  Installa le dipendenze: `npm install`
+2.  Avvia: `npm run dev`
+3.  Apri: [http://localhost:4321](http://localhost:4321)
 
+### Build per Produzione
+Per generare la versione ottimizzata:
 ```bash
 npm run build
 ```
+Puoi testare la build localmente con `npm run preview`.
 
-Per visualizzare l'anteprima della build:
-```bash
-npm run preview
-```
+### Deployment
+Il progetto include script di utility per il deployment su macOS (Apache/Launchd):
+*   `deploy.sh`: Script per automatizzare il build e lo spostamento dei file.
+*   `com.notes.astro.plist`: Configurazione per Launchd per avviare l'app come servizio.
+
+---
+
+## 📖 Guida all'uso
+
+L'applicazione include una **Guida Utente** integrata accessibile direttamente dall'interfaccia.
+Per i dettagli sulla formattazione speciale e sulle funzionalità avanzate, consulta la sezione "Guida" nel menu laterale dell'app.
 
 ## 📄 Licenza
-Questo progetto è distribuito sotto licenza MIT. Vedi il file `LICENSE` per maggiori dettagli.
+Rilasciato sotto licenza MIT.

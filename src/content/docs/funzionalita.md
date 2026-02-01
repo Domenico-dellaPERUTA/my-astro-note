@@ -16,6 +16,18 @@ Seleziona una nota dalla lista e fai clic su **📝 Modifica**. Ricordati di sal
 ## Eliminare una nota
 Fai clic sull'icona **🗑️** per eliminare una nota. **Attenzione**: l'eliminazione di una nota eliminerà anche tutte le sue "figlie".
 
+## Spostare una nota (Taglia e Incolla)
+Puoi riorganizzare l'albero delle note spostando una nota in una nuova posizione.
+
+1.  **Taglia**: Accanto al titolo della nota che vuoi spostare, fai clic sull'icona delle forbici **✂️**. La nota entrerà in modalità "taglio".
+2.  **Scegli la destinazione**:
+    *   Per spostarla **all'interno** di un'altra nota: fai clic sull'icona della cartella/appunti **📋** accanto alla nota di destinazione.
+    *   Per spostarla alla **radice** (root): fai clic sul pulsante **📋 Incolla alla radice** che appare in cima al menu laterale.
+3.  **Annulla**: Se cambi idea, fai clic sulla **❌** accanto alla nota tagliata per annullare l'operazione.
+
+> [!NOTE]
+> Quando sposti una nota, tutti i suoi contenuti e le sue note "figlie" verranno spostati insieme a lei, mantenendo la gerarchia intatta.
+
 ## Formattazione Avanzata
 L'editor supporta il classico Markdown ma con alcune **funzionalità speciali**:
 

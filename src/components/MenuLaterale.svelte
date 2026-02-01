@@ -243,18 +243,20 @@
   <h2>
     {titolo}
     {#if $userRole === "admin"}
-      {#if $clipboardNote}
-        <button
-          on:click={() => incollaRadice()}
-          title="Incolla come radice"
-          style="background:#4a90e2; margin-right:5px;"
-        >
-          📋
+      <div style="display: inline-flex;">
+        {#if $clipboardNote}
+          <button
+            on:click={() => incollaRadice()}
+            title="Incolla come radice"
+            style="background:#4a90e2; margin-right:5px;"
+          >
+            📋
+          </button>
+        {/if}
+        <button on:click={() => aggiungiVoce()} title="Nuova nota radice">
+          ➕
         </button>
-      {/if}
-      <button on:click={() => aggiungiVoce()} title="Nuova nota radice">
-        ➕
-      </button>
+      </div>
     {/if}
   </h2>
 
