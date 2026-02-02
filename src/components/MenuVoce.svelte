@@ -22,14 +22,54 @@
         expanded = !expanded;
     }
 
+    /**
+     * Fallback per la copia negli appunti.
+     * Usato quando navigator.clipboard non è disponibile (es. contesti non HTTPS).
+     */
+    function fallbackCopy(text: string) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        // Impedisce lo scrolling durante l'operazione
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            // execCommand è deprecato ma è l'unico modo in contesti non sicuri
+            const successful = document.execCommand("copy");
+            if (successful) {
+                message.set({ text: "Link copiato: " + text, type: "success" });
+            } else {
+                throw new Error("execCommand copy failed");
+            }
+        } catch (err) {
+            console.error("Errore fallback copy:", err);
+            message.set({ text: "Impossibile copiare il link", type: "error" });
+        }
+        document.body.removeChild(textArea);
+    }
+
+    /**
+     * Copia il link markdown della nota.
+     * Tenta di usare la Clipboard API moderna, altrimenti ricorre al fallback.
+     */
     async function copiaLink(notaTarget: Nota) {
         const link = `[${notaTarget.title}](/?id=${notaTarget.id})`;
-        try {
-            await navigator.clipboard.writeText(link);
-            message.set({ text: "Link copiato: " + link, type: "success" });
-        } catch (err) {
-            console.error("Errore copia:", err);
-            message.set({ text: "Impossibile copiare il link", type: "error" });
+
+        // La Clipboard API richiede un contesto sicuro (HTTPS o localhost)
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(link);
+                message.set({ text: "Link copiato: " + link, type: "success" });
+            } catch (err) {
+                console.warn("Clipboard API failed, trying fallback:", err);
+                fallbackCopy(link);
+            }
+        } else {
+            // Se non siamo in HTTPS o se l'API manca, usiamo il fallback
+            fallbackCopy(link);
         }
     }
 
