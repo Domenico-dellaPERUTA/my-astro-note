@@ -41,4 +41,28 @@
 	* {
 		box-sizing: border-box;
 	}
+
+	/* Shiki syntax highlighting styles */
+	pre.shiki {
+		padding: 1.5rem;
+		overflow-x: auto;
+		border: 1px solid #e0d0a0;
+		box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
+		background-color: #ffffff !important;
+		margin: 1.5rem 0;
+		border-radius: 4px;
+		font-family: var(--font-main);
+		font-size: 0.95rem;
+		line-height: 1.5;
+	}
+
+	code {
+		font-family: var(--font-main);
+	}
+
+	/* Specific overrides for shiki if needed */
+	pre.shiki code {
+		background: none !important;
+		padding: 0 !important;
+	}
 </style>

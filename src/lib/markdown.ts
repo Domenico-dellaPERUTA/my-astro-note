@@ -1,6 +1,27 @@
 /* src/lib/markdown.ts */
 import { marked } from 'marked';
 import createDOMPurify from 'dompurify';
+import { createHighlighter } from 'shiki';
+
+let highlighter: any = null;
+
+/**
+ * Inizializza l'highlighter di Shiki (Singleton).
+ * Include una vasta gamma di linguaggi comuni.
+ */
+async function getHighlighter() {
+    if (!highlighter) {
+        highlighter = await createHighlighter({
+            themes: ['github-light'],
+            langs: [
+                'javascript', 'typescript', 'html', 'css', 'xml',
+                'json', 'bash', 'markdown', 'sql', 'python',
+                'php', 'rust', 'csharp', 'cpp', 'java', 'yaml'
+            ]
+        });
+    }
+    return highlighter;
+}
 
 // Configure marked with custom extensions (initialize only once)
 marked.use({
@@ -30,7 +51,6 @@ marked.use({
             level: 'block',
             start(src: any) { return src.match(/:::quiz/)?.index; },
             tokenizer(src: any, tokens: any) {
-                // Permissive regex for quiz blocks: allows optional spaces and handles newlines better
                 const rule = /^:::quiz[ \t]*(.*)[\r\n]+([\s\S]*?)[\r\n]+:::/;
                 const match = rule.exec(src);
                 if (match) {
@@ -97,6 +117,29 @@ marked.use({
     ]
 } as any);
 
+// Configure shiki highlighting in marked
+async function setupHighlighter() {
+    const hl = await getHighlighter();
+    marked.use({
+        renderer: {
+            code({ text, lang }: { text: string; lang?: string }) {
+                try {
+                    return hl.codeToHtml(text, {
+                        lang: lang || 'text',
+                        theme: 'github-light'
+                    });
+                } catch (e) {
+                    console.error("Shiki highlighting error:", e);
+                    return `<pre><code class="language-${lang}">${text}</code></pre>`;
+                }
+            }
+        } as any
+    });
+}
+
+// Inizializza l'highlighter
+setupHighlighter();
+
 export async function renderMarkdown(content: string): Promise<string> {
     if (!content) return '';
 
@@ -110,11 +153,17 @@ export async function renderMarkdown(content: string): Promise<string> {
         purify = createDOMPurify(window);
     }
 
-    const rawHtml = await marked.parse(content, { breaks: true });
+    // Assicuriamoci che l'highlighter sia pronto (anche se setupHighlighter è async e gira in background)
+    await getHighlighter();
 
-    // Configure DOMPurify to allow the quiz placeholder and its data attribute
+    const rawHtml = await marked.parse(content, {
+        breaks: true
+    });
+
+    // Configure DOMPurify to allow the quiz placeholder and shiki-generated styles
+    // NOTA: ADD_TAGS e ADD_ATTR aggiungono alla whitelist esistente
     return purify.sanitize(rawHtml as string, {
-        ADD_ATTR: ['data-quiz'],
-        ADD_TAGS: ['div']
+        ADD_ATTR: ['data-quiz', 'style', 'class'],
+        ADD_TAGS: ['div', 'span', 'pre', 'code']
     });
 }
