@@ -113,6 +113,70 @@ marked.use({
                     return `<div class="error">Errore codifica quiz: ${String(e)}</div>`;
                 }
             }
+        },
+        {
+            name: 'slide',
+            level: 'block',
+            start(src: any) { return src.match(/:::slide/)?.index; },
+            tokenizer(src: any, tokens: any) {
+                const rule = /^:::slide[ \t]*(.*)[\r\n]+([\s\S]*?)[\r\n]+:::/;
+                const match = rule.exec(src);
+                if (match) {
+                    const title = match[1].trim() || 'Presentazione';
+                    const body = match[2];
+
+                    // Split slides by --- delimiter
+                    const rawSlides = body.split(/^---$/m).map(s => s.trim()).filter(s => s);
+
+                    const slides: any[] = [];
+
+                    rawSlides.forEach(slideContent => {
+                        // Check if it's an image
+                        const imageMatch = slideContent.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+                        if (imageMatch) {
+                            slides.push({
+                                type: 'image',
+                                content: imageMatch[2] // URL
+                            });
+                        }
+                        // Check if it's a code block
+                        else if (slideContent.match(/^```/)) {
+                            const codeMatch = slideContent.match(/^```(\w+)?\n([\s\S]*?)```/);
+                            if (codeMatch) {
+                                const lang = codeMatch[1] || 'text';
+                                const code = codeMatch[2];
+
+                                // We'll render the code using shiki later
+                                slides.push({
+                                    type: 'code',
+                                    content: code,
+                                    lang: lang
+                                });
+                            }
+                        }
+                    });
+
+                    return {
+                        type: 'slide',
+                        raw: match[0],
+                        title,
+                        slides
+                    };
+                }
+            },
+            renderer(token: any) {
+                const slideData = JSON.stringify({
+                    title: token.title,
+                    slides: token.slides
+                });
+                try {
+                    const base64Data = btoa(encodeURIComponent(slideData));
+                    return `<div class="slide-placeholder" data-slide="${base64Data}"></div>`;
+                } catch (e) {
+                    console.error("Encoding error:", e);
+                    return `<div class="error">Errore codifica slide: ${String(e)}</div>`;
+                }
+            }
         }
     ]
 } as any);
@@ -160,10 +224,10 @@ export async function renderMarkdown(content: string): Promise<string> {
         breaks: true
     });
 
-    // Configure DOMPurify to allow the quiz placeholder and shiki-generated styles
+    // Configure DOMPurify to allow the quiz/slide placeholder and shiki-generated styles
     // NOTA: ADD_TAGS e ADD_ATTR aggiungono alla whitelist esistente
     return purify.sanitize(rawHtml as string, {
-        ADD_ATTR: ['data-quiz', 'style', 'class'],
+        ADD_ATTR: ['data-quiz', 'data-slide', 'style', 'class'],
         ADD_TAGS: ['div', 'span', 'pre', 'code']
     });
 }

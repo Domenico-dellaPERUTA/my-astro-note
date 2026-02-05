@@ -14,6 +14,7 @@
         type Nota,
     } from "../stores/notesStore";
     import Quiz from "./Quiz.svelte";
+    import Slide from "./Slide.svelte";
     import { mount } from "svelte";
     import { renderMarkdown } from "../lib/markdown";
 
@@ -41,13 +42,27 @@
 - [x] Retro Typewriter
 :::`;
 
+    const SLIDE_TEMPLATE = `:::slide Presentazione di Esempio
+![Immagine 1](/WebApp/image1.png)
+---
+\`\`\`javascript
+const hello = "Hello World";
+console.log(hello);
+\`\`\`
+---
+![Immagine 2](/WebApp/image2.png)
+:::`;
+
     function handleTypeChange(e: Event) {
         const newType = (e.target as HTMLSelectElement).value as
             | "note"
-            | "quiz";
+            | "quiz"
+            | "slide";
         tipo = newType;
         if (newType === "quiz" && (!testo || testo.trim() === "")) {
             testo = QUIZ_TEMPLATE;
+        } else if (newType === "slide" && (!testo || testo.trim() === "")) {
+            testo = SLIDE_TEMPLATE;
         }
     }
 
@@ -96,10 +111,92 @@
         };
     }
 
+    function mountSlides(node: HTMLElement, content: string) {
+        const update = async () => {
+            const placeholders = node.querySelectorAll(".slide-placeholder");
+
+            // Import shiki highlighter per renderizzare i blocchi di codice
+            const { createHighlighter } = await import("shiki");
+            const hl = await createHighlighter({
+                themes: ["github-light"],
+                langs: [
+                    "javascript",
+                    "typescript",
+                    "html",
+                    "css",
+                    "xml",
+                    "json",
+                    "bash",
+                    "python",
+                ],
+            });
+
+            placeholders.forEach((element) => {
+                const ph = element as HTMLElement;
+                if (ph.getAttribute("data-mounted")) return;
+                const dataStr = ph.getAttribute("data-slide");
+                if (dataStr) {
+                    try {
+                        const decoded = decodeURIComponent(atob(dataStr));
+                        const slideData = JSON.parse(decoded);
+
+                        // Processa le slide per renderizzare i blocchi di codice
+                        const processedSlides = slideData.slides.map(
+                            (slide: any) => {
+                                if (slide.type === "code") {
+                                    // Renderizza il codice con shiki
+                                    const renderedCode = hl.codeToHtml(
+                                        slide.content,
+                                        {
+                                            lang: slide.lang || "text",
+                                            theme: "github-light",
+                                        },
+                                    );
+                                    return { ...slide, content: renderedCode };
+                                }
+                                return slide;
+                            },
+                        );
+
+                        mount(Slide, {
+                            target: ph,
+                            props: { slides: processedSlides },
+                        });
+                        ph.setAttribute("data-mounted", "true");
+                        ph.style.minHeight = "0";
+                        ph.style.border = "none";
+                        ph.style.backgroundColor = "transparent";
+                    } catch (e) {
+                        console.error("Errore mounting slide component:", e);
+                    }
+                }
+            });
+        };
+
+        setTimeout(update, 50);
+
+        return {
+            update() {
+                setTimeout(update, 50);
+            },
+        };
+    }
+
+    function mountComponents(node: HTMLElement, content: string) {
+        mountQuizzes(node, content);
+        mountSlides(node, content);
+        return {
+            update(newContent: string) {
+                mountQuizzes(node, newContent);
+                mountSlides(node, newContent);
+            },
+        };
+    }
+
     async function saveNote(params: {
         title: string;
         content: string;
-        type: "note" | "quiz";
+        type: "note" | "quiz" | "slide";
     }) {
         if ($selectedNoteIndex === -1) return;
 
@@ -162,6 +259,7 @@
                 <select id="tipo" value={tipo} on:change={handleTypeChange}>
                     <option value="note">📝 Nota</option>
                     <option value="quiz">❓ Quiz</option>
+                    <option value="slide">🎞️ Slide</option>
                 </select>
             </div>
         </div>
@@ -171,10 +269,20 @@
             <textarea id="testo" bind:value={testo}></textarea>
             <div class="sidebar-tools">
                 <button class="save" type="submit"
-                    >💾 SALVA {tipo === "quiz" ? "QUIZ" : "NOTA"}</button
+                    >💾 SALVA {tipo === "quiz"
+                        ? "QUIZ"
+                        : tipo === "slide"
+                          ? "SLIDE"
+                          : "NOTA"}</button
                 >
                 <div class="markdown-legend">
-                    <h4>{tipo === "quiz" ? "Quiz Help" : "Markdown Help"}</h4>
+                    <h4>
+                        {tipo === "quiz"
+                            ? "Quiz Help"
+                            : tipo === "slide"
+                              ? "Slide Help"
+                              : "Markdown Help"}
+                    </h4>
                     <ul>
                         {#if tipo === "quiz"}
                             <li>:::quiz [Tititlo]</li>
@@ -185,6 +293,14 @@
                             <li>? Domanda</li>
                             <li>- [ ] Sbagliata</li>
                             <li>- [x] Corretta</li>
+                            <li>::: (chiusura)</li>
+                        {:else if tipo === "slide"}
+                            <li>:::slide [Titolo]</li>
+                            <li>![Alt](url)</li>
+                            <li>--- (separatore)</li>
+                            <li>```lang</li>
+                            <li>codice</li>
+                            <li>```</li>
                             <li>::: (chiusura)</li>
                         {:else}
                             <li><b>**Bold**</b></li>
@@ -206,7 +322,7 @@
     <div class="annotazione">
         <span class="pin">📍 </span>
         <h2>{titolo}</h2>
-        <div class="testo" use:mountQuizzes={html}>{@html html}</div>
+        <div class="testo" use:mountComponents={html}>{@html html}</div>
     </div>
 {/if}
 

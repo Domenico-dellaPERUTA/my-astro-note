@@ -153,6 +153,8 @@
         >
             {#if nota.type === "quiz"}
                 <span class="type-icon">❓</span>
+            {:else if nota.type === "slide"}
+                <span class="type-icon">🎞️</span>
             {/if}
             {nota.title}
         </button>

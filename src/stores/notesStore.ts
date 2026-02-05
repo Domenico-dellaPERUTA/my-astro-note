@@ -52,7 +52,7 @@ export type Nota = {
     title: string;
     content: string;
     parent_id?: number | null;
-    type?: 'note' | 'quiz' | null;
+    type?: 'note' | 'quiz' | 'slide' | null;
     children?: Nota[]; // Per la visualizzazione ad albero
     created_at?: Date;
     updated_at?: Date;
@@ -83,7 +83,7 @@ export async function loadNotesFromDb() {
 }
 
 // Funzione per creare una nota
-export async function createNote(title: string, content: string, parentId?: number, type: 'note' | 'quiz' = 'note') {
+export async function createNote(title: string, content: string, parentId?: number, type: 'note' | 'quiz' | 'slide' = 'note') {
     try {
         const response = await fetch('/api/notes', {
             method: 'POST',
