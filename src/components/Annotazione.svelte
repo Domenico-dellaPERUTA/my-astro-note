@@ -15,7 +15,7 @@
     } from "../stores/notesStore";
     import Quiz from "./Quiz.svelte";
     import Slide from "./Slide.svelte";
-    import { mount } from "svelte";
+    import { mount, onMount } from "svelte";
     import { renderMarkdown } from "../lib/markdown";
 
     $: titolo = $notes.at($selectedNoteIndex)?.title ?? "";
@@ -240,6 +240,121 @@ console.log(hello);
             console.error(errorMessage + ":", error);
         }
     }
+    let speaking = false;
+    let audio: HTMLAudioElement | null = null;
+    let speechUtterance: SpeechSynthesisUtterance | null = null;
+    let voices: SpeechSynthesisVoice[] = [];
+
+    onMount(() => {
+        // Pre-caricamento voci per evitare intoppi al primo click
+        const loadVoices = () => {
+            voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                console.log("[TTS] Voci caricate all'avvio:", voices.length);
+            }
+        };
+
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+    });
+
+    function stopSpeech() {
+        if (audio) {
+            audio.pause();
+            audio = null;
+        }
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
+        speaking = false;
+    }
+
+    // Funzione per aspettare il caricamento delle voci (problema comune del browser)
+    function getVoicesAsync() {
+        // Già gestito in onMount
+        return voices;
+    }
+
+    function toggleSpeech() {
+        if (speaking) {
+            stopSpeech();
+            return;
+        }
+
+        // Crea un testo "pulito" da leggere
+        const textToRead = `${titolo}. ${testo.replace(/:::.*?:::/gs, "").replace(/[#*`]/g, "")}`;
+
+        speaking = true;
+
+        // Annulla eventuali letture precedenti per sicurezza
+        window.speechSynthesis.cancel();
+
+        // Sintesi Nativa del Browser (macOS)
+        speechUtterance = new SpeechSynthesisUtterance(textToRead);
+        speechUtterance.lang = "it-IT";
+
+        // Ottimizzazione per macOS: cerchiamo una voce di qualità
+        if (voices.length === 0) {
+            voices = window.speechSynthesis.getVoices();
+        }
+
+        const preferredVoice =
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") && v.name.includes("Emma"),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") && v.name.includes("Federica"),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") &&
+                    (v.name.includes("Alice") || v.name.includes("Elsa")),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") &&
+                    (v.name.includes("Luca") || v.name.includes("Cosimo")),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") && !v.name.includes("Google"),
+            );
+
+        if (preferredVoice) {
+            console.log(
+                "[TTS] Voce selezionata:",
+                preferredVoice.name,
+                "|",
+                preferredVoice.lang,
+                "| localService:",
+                preferredVoice.localService,
+            );
+            speechUtterance.voice = preferredVoice;
+            speechUtterance.lang = preferredVoice.lang;
+            // Parametri per forzare qualità alta
+            speechUtterance.rate = 1.0;
+            speechUtterance.pitch = 1.0;
+            speechUtterance.volume = 1.0;
+        } else {
+            console.warn(
+                "[TTS] Nessuna voce italiana premium trovata, uso quella di sistema.",
+            );
+        }
+
+        speechUtterance.onend = () => {
+            speaking = false;
+        };
+
+        speechUtterance.onerror = () => {
+            speaking = false;
+        };
+
+        window.speechSynthesis.speak(speechUtterance);
+    }
 </script>
 
 <!-- [ View ] ------------------------------------------------------------------------------------>
@@ -321,7 +436,16 @@ console.log(hello);
 {:else}
     <div class="annotazione">
         <span class="pin">📍 </span>
-        <h2>{titolo}</h2>
+        <div class="header-view">
+            <h2>{titolo}</h2>
+            <button
+                class="btn-speech"
+                on:click={toggleSpeech}
+                title={speaking ? "Ferma lettura" : "Ascolta nota"}
+            >
+                {speaking ? "⏹️" : "🔊"}
+            </button>
+        </div>
         <div class="testo" use:mountComponents={html}>{@html html}</div>
     </div>
 {/if}
@@ -355,9 +479,43 @@ console.log(hello);
     h2 {
         border-bottom: 2px solid var(--text-ink);
         padding-bottom: 10px;
-        margin-top: 0;
+        margin: 0;
         text-transform: uppercase;
         letter-spacing: 1px;
+        flex: 1;
+    }
+
+    .header-view {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        border-bottom: 2px solid var(--text-ink);
+        padding-bottom: 10px;
+    }
+
+    .header-view h2 {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .btn-speech {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+        transition: transform 0.2s;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-speech:hover {
+        transform: scale(1.2);
+        background-color: rgba(0, 0, 0, 0.05);
     }
 
     .editor-container {

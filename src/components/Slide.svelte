@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { onMount } from "svelte";
+
     export let slides: {
         type: "image" | "code";
         content: string;
@@ -6,17 +8,113 @@
     }[] = [];
 
     let currentSlide = 0;
+    let speaking = false;
+    let audio: HTMLAudioElement | null = null;
+    let speechUtterance: SpeechSynthesisUtterance | null = null;
+    let voices: SpeechSynthesisVoice[] = [];
+
+    onMount(() => {
+        // Pre-caricamento voci
+        const loadVoices = () => {
+            voices = window.speechSynthesis.getVoices();
+        };
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+    });
 
     function nextSlide() {
         currentSlide = (currentSlide + 1) % slides.length;
+        if (speaking) stopSpeech();
     }
 
     function prevSlide() {
         currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+        if (speaking) stopSpeech();
     }
 
     function goToSlide(index: number) {
         currentSlide = index;
+        if (speaking) stopSpeech();
+    }
+
+    function stopSpeech() {
+        if (audio) {
+            audio.pause();
+            audio = null;
+        }
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
+        speaking = false;
+    }
+
+    function toggleSpeech() {
+        if (speaking) {
+            stopSpeech();
+            return;
+        }
+
+        const slide = slides[currentSlide];
+        let textToRead = `Slide ${currentSlide + 1}. `;
+
+        if (slide.type === "code") {
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = slide.content;
+            textToRead += tempDiv.textContent || "";
+        } else if (slide.type === "image") {
+            textToRead += "Immagine.";
+        }
+
+        speaking = true;
+        window.speechSynthesis.cancel();
+
+        // Sintesi Nativa Browser (macOS)
+        speechUtterance = new SpeechSynthesisUtterance(textToRead);
+        speechUtterance.lang = "it-IT";
+
+        if (voices.length === 0) voices = window.speechSynthesis.getVoices();
+
+        const preferredVoice =
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") && v.name.includes("Emma"),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") && v.name.includes("Federica"),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") &&
+                    (v.name.includes("Alice") || v.name.includes("Elsa")),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") &&
+                    (v.name.includes("Luca") || v.name.includes("Cosimo")),
+            ) ||
+            (voices as SpeechSynthesisVoice[]).find(
+                (v: SpeechSynthesisVoice) =>
+                    v.lang.startsWith("it") && !v.name.includes("Google"),
+            );
+
+        if (preferredVoice) {
+            console.log("[TTS Slide] Voce selezionata:", preferredVoice.name);
+            speechUtterance.voice = preferredVoice;
+            speechUtterance.lang = preferredVoice.lang;
+        }
+
+        speechUtterance.onend = () => {
+            speaking = false;
+        };
+
+        speechUtterance.onerror = () => {
+            speaking = false;
+        };
+
+        window.speechSynthesis.speak(speechUtterance);
     }
 </script>
 
@@ -69,7 +167,14 @@
         </div>
 
         <div class="slide-counter">
-            {currentSlide + 1} / {slides.length}
+            <button
+                class="btn-speech-mini"
+                on:click={toggleSpeech}
+                title={speaking ? "Ferma lettura" : "Ascolta slide"}
+            >
+                {speaking ? "⏹️" : "🔊"}
+            </button>
+            <span>{currentSlide + 1} / {slides.length}</span>
         </div>
     {/if}
 </div>
@@ -225,5 +330,25 @@
         border-radius: 3px;
         font-size: 0.85rem;
         font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-speech-mini {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+    }
+
+    .btn-speech-mini:hover {
+        transform: scale(1.2);
     }
 </style>
