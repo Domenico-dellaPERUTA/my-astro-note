@@ -85,31 +85,33 @@
         path: string;
         isDir: boolean;
     }) {
-        if (
-            !confirm(
-                `Sei sicuro di voler eliminare ${file.isDir ? "la CARTELLA e tutto il suo contenuto" : "il file"} "${file.name}"?`,
-            )
-        )
-            return;
+        message.set({
+            text: `Sei sicuro di voler eliminare ${file.isDir ? "la CARTELLA e tutto il suo contenuto" : "il file"} "${file.name}"?`,
+            type: "confirmation",
+            confirm: async () => {
+                try {
+                    const response = await fetch(
+                        `/api/admin/files?path=${encodeURIComponent(file.path)}`,
+                        {
+                            method: "DELETE",
+                        },
+                    );
 
-        try {
-            const response = await fetch(
-                `/api/admin/files?path=${encodeURIComponent(file.path)}`,
-                {
-                    method: "DELETE",
-                },
-            );
+                    if (!response.ok) throw new Error("Errore eliminazione");
 
-            if (!response.ok) throw new Error("Errore eliminazione");
-
-            loadFiles(currentPath);
-            message.set({ text: "Eliminato con successo", type: "success" });
-        } catch (err) {
-            message.set({
-                text: "Errore durante l'eliminazione",
-                type: "error",
-            });
-        }
+                    loadFiles(currentPath);
+                    message.set({
+                        text: "Eliminato con successo",
+                        type: "success",
+                    });
+                } catch (err) {
+                    message.set({
+                        text: "Errore durante l'eliminazione",
+                        type: "error",
+                    });
+                }
+            },
+        });
     }
 
     async function startRename(file: { name: string; path: string }) {

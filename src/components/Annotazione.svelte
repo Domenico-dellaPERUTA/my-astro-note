@@ -75,24 +75,25 @@ console.log(hello);
             } else if (newType === "slide") {
                 testo = SLIDE_TEMPLATE;
             }
+            tipo = newType;
         } else {
             // Se c'è contenuto personalizzato, chiedi conferma solo se si passa a Quiz o Slide
             if (newType === "quiz" || newType === "slide") {
-                const confirmChange = confirm(
-                    "Cambiare tipo sovrascriverà il contenuto attuale con il template. Vuoi procedere?",
-                );
-                if (confirmChange) {
-                    if (newType === "quiz") testo = QUIZ_TEMPLATE;
-                    if (newType === "slide") testo = SLIDE_TEMPLATE;
-                } else {
-                    // Annulla il cambio tipo nel select
-                    (e.target as HTMLSelectElement).value = tipo;
-                    return; // Esci senza cambiare tipo
-                }
+                message.set({
+                    text: "Cambiare tipo sovrascriverà il contenuto attuale con il template. Vuoi procedere?",
+                    type: "confirmation",
+                    confirm: async () => {
+                        if (newType === "quiz") testo = QUIZ_TEMPLATE;
+                        if (newType === "slide") testo = SLIDE_TEMPLATE;
+                        tipo = newType;
+                    },
+                });
+                // Ripristiniamo temporaneamente il valore del select in attesa della conferma
+                (e.target as HTMLSelectElement).value = tipo;
+            } else {
+                tipo = newType;
             }
         }
-
-        tipo = newType;
     }
 
     function mountQuizzes(node: HTMLElement, content: string) {
