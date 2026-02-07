@@ -284,7 +284,20 @@ console.log(hello);
         }
 
         // Crea un testo "pulito" da leggere
-        const textToRead = `${titolo}. ${testo.replace(/:::.*?:::/gs, "").replace(/[#*`]/g, "")}`;
+        // Crea un testo "pulito" da leggere:
+        // 1. Rimuove i blocchi di codice (```...```)
+        // 2. Rimuove le immagini (![...] (...))
+        // 3. Rimuove i blocchi custom (:::...:::)
+        // 4. Pulisce simboli markdown residui
+        const cleanText = testo
+            .replace(/```[\s\S]*?```/g, "") // Rimuove blocchi di codice
+            .replace(/`[\s\S]*?`/g, "") // Rimuove codice inline
+            .replace(/!\[.*?\]\(.*?\)/g, "") // Rimuove immagini
+            .replace(/:::[\s\S]*?:::/gs, "") // Rimuove blocchi speciali (quiz, slide)
+            .replace(/[#*`_~+]/g, "") // Rimuove simboli markdown (incluso + per sottolineatura)
+            .trim();
+
+        const textToRead = `${titolo}. ${cleanText}`;
 
         speaking = true;
 
