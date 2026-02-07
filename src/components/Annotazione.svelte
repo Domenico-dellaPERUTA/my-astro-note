@@ -58,12 +58,41 @@ console.log(hello);
             | "note"
             | "quiz"
             | "slide";
-        tipo = newType;
-        if (newType === "quiz" && (!testo || testo.trim() === "")) {
-            testo = QUIZ_TEMPLATE;
-        } else if (newType === "slide" && (!testo || testo.trim() === "")) {
-            testo = SLIDE_TEMPLATE;
+
+        // Regex per identificare il contenuto di default generato dal sistema
+        // Es: "Contenuto della nota 5 ..."
+        const defaultContentRegex = /^Contenuto della nota \d+ \.\.\.$/;
+
+        const isDefaultContent =
+            !testo ||
+            testo.trim() === "" ||
+            defaultContentRegex.test(testo.trim());
+
+        if (isDefaultContent) {
+            // Se è vuoto o default, applica subito il template
+            if (newType === "quiz") {
+                testo = QUIZ_TEMPLATE;
+            } else if (newType === "slide") {
+                testo = SLIDE_TEMPLATE;
+            }
+        } else {
+            // Se c'è contenuto personalizzato, chiedi conferma solo se si passa a Quiz o Slide
+            if (newType === "quiz" || newType === "slide") {
+                const confirmChange = confirm(
+                    "Cambiare tipo sovrascriverà il contenuto attuale con il template. Vuoi procedere?",
+                );
+                if (confirmChange) {
+                    if (newType === "quiz") testo = QUIZ_TEMPLATE;
+                    if (newType === "slide") testo = SLIDE_TEMPLATE;
+                } else {
+                    // Annulla il cambio tipo nel select
+                    (e.target as HTMLSelectElement).value = tipo;
+                    return; // Esci senza cambiare tipo
+                }
+            }
         }
+
+        tipo = newType;
     }
 
     function mountQuizzes(node: HTMLElement, content: string) {
