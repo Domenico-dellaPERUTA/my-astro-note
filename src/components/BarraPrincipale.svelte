@@ -169,12 +169,13 @@
   .quiz-status-header {
     display: flex;
     gap: 20px;
-    background: #1a1a1a;
+    background: #ab2727;
     padding: 5px 15px;
     border: 1px solid #444;
     border-radius: 20px;
     font-size: 0.9rem;
     box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+    position: fixed;
   }
 
   .quiz-timer {
