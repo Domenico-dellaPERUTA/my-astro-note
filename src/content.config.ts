@@ -11,4 +11,13 @@ export const collections = {
             order: z.number().default(0),
         }),
     }),
+    config: defineCollection({
+        loader: glob({ pattern: "**/*.md", base: "./src/content/config" }),
+        schema: z.object({
+            theme: z.string().default("default"),
+            themeVariables: z.record(z.string(), z.any()).optional(),
+            flowchart: z.record(z.string(), z.any()).optional(),
+            themeCSS: z.string().optional(),
+        }),
+    }),
 };

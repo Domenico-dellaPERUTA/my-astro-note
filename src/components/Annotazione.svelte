@@ -15,6 +15,8 @@
     } from "../stores/notesStore";
     import Quiz from "./Quiz.svelte";
     import Slide from "./Slide.svelte";
+    import Diagramma from "./Diagramma.svelte";
+    import DiagramBuilder from "./DiagramBuilder.svelte";
     import { mount, onMount } from "svelte";
     import { renderMarkdown } from "../lib/markdown";
 
@@ -24,6 +26,8 @@
 
     let html = "";
     $: renderMarkdown(testo).then((res) => (html = res));
+
+    let visualMode = true;
 
     const QUIZ_TEMPLATE = `:::quiz Esame di Storia Digitale
 ::time 2min
@@ -53,11 +57,45 @@ console.log(hello);
 ![Immagine 2](/WebApp/image2.png)
 :::`;
 
+    const DIAGRAM_TEMPLATE = `digraph G {
+  Inizio [shape=circle, style=filled, fillcolor=black, label="", width=0.15, height=0.15]; // Inizio
+  A [label="Stato A", shape=box, style=rounded];
+  B [label="Stato B", shape=box, style=rounded];
+  C [label=" Stato C", shape=box, style=rounded];
+  K [shape=diamond, label="Cosa Vuoi?", xlabel="", width=0.5, height=0.5, fixedsize=true];
+  F [shape=none, label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
+      <TR>
+        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD PORT="nw" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD PORT="n" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD PORT="ne" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
+      </TR>
+      <TR>
+        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD PORT="sw" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD PORT="s" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD PORT="se" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
+        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
+      </TR>
+    </TABLE>>]; // Fork/Join
+  Fine [shape=doublecircle, style=filled, fillcolor=black, label="", width=0.12, height=0.12]; // Fine
+
+  Inizio -> A [tailport=s, headport=n, arrowhead=vee, dir=forward];
+  A -> F [tailport=s, headport=n, arrowhead=vee, dir=forward];
+  F -> B [tailport=sw, headport=n, arrowhead=vee, dir=forward];
+  F -> Fine [tailport=se, headport=n, arrowhead=vee, dir=forward];
+  B -> K [tailport=s, headport=n, arrowhead=vee, dir=forward];
+  K -> C [tailport=s, headport=n, arrowhead=vee, dir=forward];
+  K -> Fine [tailport=e, arrowhead=vee, dir=forward];
+}`;
+
     function handleTypeChange(e: Event) {
         const newType = (e.target as HTMLSelectElement).value as
             | "note"
             | "quiz"
-            | "slide";
+            | "slide"
+            | "diagram";
 
         // Regex per identificare il contenuto di default generato dal sistema
         // Es: "Contenuto della nota 5 ..."
@@ -74,17 +112,24 @@ console.log(hello);
                 testo = QUIZ_TEMPLATE;
             } else if (newType === "slide") {
                 testo = SLIDE_TEMPLATE;
+            } else if (newType === "diagram") {
+                testo = DIAGRAM_TEMPLATE;
             }
             tipo = newType;
         } else {
             // Se c'è contenuto personalizzato, chiedi conferma solo se si passa a Quiz o Slide
-            if (newType === "quiz" || newType === "slide") {
+            if (
+                newType === "quiz" ||
+                newType === "slide" ||
+                newType === "diagram"
+            ) {
                 message.set({
                     text: "Cambiare tipo sovrascriverà il contenuto attuale con il template. Vuoi procedere?",
                     type: "confirmation",
                     confirm: async () => {
                         if (newType === "quiz") testo = QUIZ_TEMPLATE;
                         if (newType === "slide") testo = SLIDE_TEMPLATE;
+                        if (newType === "diagram") testo = DIAGRAM_TEMPLATE;
                         tipo = newType;
                     },
                 });
@@ -226,7 +271,7 @@ console.log(hello);
     async function saveNote(params: {
         title: string;
         content: string;
-        type: "note" | "quiz" | "slide";
+        type: "note" | "quiz" | "slide" | "diagram";
     }) {
         if ($selectedNoteIndex === -1) return;
 
@@ -418,61 +463,95 @@ console.log(hello);
                     <option value="note">📝 Nota</option>
                     <option value="quiz">❓ Quiz</option>
                     <option value="slide">🎞️ Slide</option>
+                    <option value="diagram">📊 Diagramma</option>
                 </select>
             </div>
         </div>
 
         <label for="testo">Testo (Markdown):</label>
         <div class="editor-container">
-            <textarea id="testo" bind:value={testo}></textarea>
+            {#if tipo === "diagram" && visualMode}
+                <div class="diagram-workspace">
+                    <Diagramma content={testo} />
+                </div>
+            {:else}
+                <textarea id="testo" bind:value={testo}></textarea>
+            {/if}
             <div class="sidebar-tools">
                 <button class="save" type="submit"
                     >💾 SALVA {tipo === "quiz"
                         ? "QUIZ"
                         : tipo === "slide"
                           ? "SLIDE"
-                          : "NOTA"}</button
+                          : tipo === "diagram"
+                            ? "DIAGRAMMA"
+                            : "NOTA"}</button
                 >
-                <div class="markdown-legend">
-                    <h4>
-                        {tipo === "quiz"
-                            ? "Quiz Help"
-                            : tipo === "slide"
-                              ? "Slide Help"
-                              : "Markdown Help"}
-                    </h4>
-                    <ul>
-                        {#if tipo === "quiz"}
-                            <li>:::quiz [Tititlo]</li>
-                            <li>::time [60s|5min]</li>
-                            <li>::ok [punti]</li>
-                            <li>::error [punti]</li>
-                            <li>::null [punti]</li>
-                            <li>? Domanda</li>
-                            <li>- [ ] Sbagliata</li>
-                            <li>- [x] Corretta</li>
-                            <li>::: (chiusura)</li>
-                        {:else if tipo === "slide"}
-                            <li>:::slide [Titolo]</li>
-                            <li>![Alt](url)</li>
-                            <li>--- (separatore)</li>
-                            <li>```lang</li>
-                            <li>codice</li>
-                            <li>```</li>
-                            <li>::: (chiusura)</li>
-                        {:else}
-                            <li><b>**Bold**</b></li>
-                            <li><i>*Italic*</i></li>
-                            <li># Header 1</li>
-                            <li>## Header 2</li>
-                            <li>++Underline++</li>
-                            <li>- List item</li>
-                            <li>[Link](url)</li>
-                            <li>`Code`</li>
-                            <li>```block```</li>
-                        {/if}
-                    </ul>
-                </div>
+                {#if tipo === "diagram"}
+                    <button
+                        class="toggle-mode"
+                        type="button"
+                        on:click={() => (visualMode = !visualMode)}
+                    >
+                        {visualMode
+                            ? "📝 Modifica Testo"
+                            : "📊 Modifica Visuale"}
+                    </button>
+                {/if}
+
+                {#if tipo === "diagram" && visualMode}
+                    <DiagramBuilder
+                        content={testo}
+                        onUpdate={(newContent) => (testo = newContent)}
+                    />
+                {:else}
+                    <div class="markdown-legend">
+                        <h4>
+                            {tipo === "quiz"
+                                ? "Quiz Help"
+                                : tipo === "slide"
+                                  ? "Slide Help"
+                                  : tipo === "diagram"
+                                    ? "Graphviz Help"
+                                    : "Markdown Help"}
+                        </h4>
+                        <ul>
+                            {#if tipo === "quiz"}
+                                <li>:::quiz [Tititlo]</li>
+                                <li>::time [60s|5min]</li>
+                                <li>::ok [punti]</li>
+                                <li>::error [punti]</li>
+                                <li>::null [punti]</li>
+                                <li>? Domanda</li>
+                                <li>- [ ] Sbagliata</li>
+                                <li>- [x] Corretta</li>
+                                <li>::: (chiusura)</li>
+                            {:else if tipo === "slide"}
+                                <li>:::slide [Titolo]</li>
+                                <li>![Alt](url)</li>
+                                <li>--- (separatore)</li>
+                                <li>```lang</li>
+                                <li>codice</li>
+                                <li>```</li>
+                                <li>::: (chiusura)</li>
+                            {:else if tipo === "diagram"}
+                                <li>digraph G &#123; ... &#125;</li>
+                                <li>A -&gt; B;</li>
+                                <li>B [shape=diamond, xlabel="?"];</li>
+                            {:else}
+                                <li><b>**Bold**</b></li>
+                                <li><i>*Italic*</i></li>
+                                <li># Header 1</li>
+                                <li>## Header 2</li>
+                                <li>++Underline++</li>
+                                <li>- List item</li>
+                                <li>[Link](url)</li>
+                                <li>`Code`</li>
+                                <li>```block```</li>
+                            {/if}
+                        </ul>
+                    </div>
+                {/if}
             </div>
         </div>
     </form>
@@ -489,7 +568,11 @@ console.log(hello);
                 {speaking ? "⏹️" : "🔊"}
             </button>
         </div>
-        <div class="testo" use:mountComponents={html}>{@html html}</div>
+        {#if tipo === "diagram"}
+            <Diagramma content={testo} />
+        {:else}
+            <div class="testo" use:mountComponents={html}>{@html html}</div>
+        {/if}
     </div>
 {/if}
 
@@ -568,11 +651,16 @@ console.log(hello);
         flex: 1;
     }
 
+    .editor-container > :first-child {
+        flex: 2; /* 2/3 width */
+    }
+
     .sidebar-tools {
         display: flex;
         flex-direction: column;
         gap: 20px;
         min-width: 220px;
+        flex: 1; /* 1/3 width */
     }
 
     .markdown-legend {
@@ -662,8 +750,9 @@ console.log(hello);
     input[type="text"] {
         border-bottom: 1px dashed #ccc;
         background-color: #ffffff;
-        font-size: 1.5rem;
+        font-size: 2rem; /* Larger title */
         font-weight: bold;
+        text-align: center; /* Centered */
     }
 
     input[type="text"]:focus {
@@ -753,5 +842,24 @@ console.log(hello);
     .save:active {
         transform: translate(2px, 2px);
         box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+    }
+
+    .diagram-workspace {
+        flex-grow: 1;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        overflow: hidden;
+    }
+
+    .toggle-mode {
+        background-color: #4e73ab;
+        color: white;
+        border: none;
+        padding: 0.8rem;
+        cursor: pointer;
+        border-radius: 2px;
+        margin-bottom: 15px;
+        font-weight: bold;
     }
 </style>
