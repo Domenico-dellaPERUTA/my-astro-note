@@ -5,7 +5,10 @@
     export let onUpdate: (newContent: string) => void;
 
     // Config
-    let diagramType: "activity" | "class" | "usecase" = "activity";
+    // Config (Deducible from content)
+    $: diagramType = (content
+        .match(/\/\/ @type:\s*(activity|class|usecase)/i)?.[1]
+        ?.toLowerCase() || "activity") as "activity" | "class" | "usecase";
 
     // Node State
     let newNodeId = "";
@@ -102,7 +105,7 @@
             // Use Case Diagram
             switch (nodeType) {
                 case "actor":
-                    nodeDef = `\n  ${id} [shape=none, label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0"><TR><TD><FONT POINT-SIZE="24">👤</FONT></TD></TR><TR><TD>${newNodeLabel}</TD></TR></TABLE>>];`;
+                    nodeDef = `\n  ${id} [shape=none, image="/uml-actor.svg", label="${newNodeLabel}", labelloc=b, imagescale=true, fixedsize=true, width=0.4, height=0.8];`;
                     break;
                 case "usecase":
                     nodeDef = `\n  ${id} [label="${newNodeLabel}", shape=ellipse];`;
@@ -184,8 +187,23 @@
                 if (isBidirectional) tail = "vee";
                 break;
             case "association":
+                if (diagramType === "usecase" || diagramType === "class") {
+                    head = "none";
+                    tail = "none";
+                    dir = "none";
+                } else {
+                    head = "vee";
+                    if (isBidirectional) tail = "vee";
+                }
+                break;
+            case "association_directed":
                 head = "vee";
-                if (isBidirectional) tail = "vee";
+                tail = "none";
+                dir = "forward";
+                if (isBidirectional) {
+                    tail = "vee";
+                    dir = "both";
+                }
                 break;
         }
 
@@ -279,28 +297,6 @@
         <h4>Costruttore Visuale</h4>
 
         <div class="toolbar">
-            <!-- CONFIGURAZIONE DIAGRAMMA -->
-            <div class="tool-group type-selector">
-                <label class="group-title">Configurazione</label>
-                <div class="form-row">
-                    <select bind:value={diagramType}>
-                        <option value="activity">Attività</option>
-                        <option value="class">Classi</option>
-                        <option value="usecase">Casi d'Uso</option>
-                    </select>
-                    <select
-                        value={currentRankdir}
-                        on:change={(e) =>
-                            toggleOrientation(e.currentTarget.value as any)}
-                    >
-                        <option value="TB">Verticale (↓)</option>
-                        <option value="BT">Inverso (↑)</option>
-                        <option value="LR">Orizzontale (➔)</option>
-                        <option value="RL">Orizz. Inverso (⇠)</option>
-                    </select>
-                </div>
-            </div>
-
             <!-- 1. AGGIUNTA NODO -->
             <div class="tool-group">
                 <label class="group-title"
@@ -414,7 +410,10 @@
                             <option value="association">Transizione (➔)</option>
                             <option value="dependency">Tratteggiata (⇢)</option>
                         {:else if diagramType === "class"}
-                            <option value="association">Associazione (➔)</option
+                            <option value="association">Associazione (—)</option
+                            >
+                            <option value="association_directed"
+                                >Associazione Diretta (➔)</option
                             >
                             <option value="inheritance">Ereditarietà (▷)</option
                             >
@@ -429,7 +428,7 @@
                             <option value="dependency">Dipendenza (⇢)</option>
                         {:else}
                             <option value="association"
-                                >Comunicazione (➔)</option
+                                >Comunicazione / Associazione (—)</option
                             >
                             <option value="include"
                                 >Inclusione (⇠ include ⇠)</option

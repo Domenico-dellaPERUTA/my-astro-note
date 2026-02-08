@@ -99,7 +99,7 @@
 
   h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 2.5rem !important;
     flex-grow: 1;
     text-align: center;
   }
@@ -163,7 +163,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-width: 200px;
+    min-width: 90%;
   }
 
   .quiz-status-header {

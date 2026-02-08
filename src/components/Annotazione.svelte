@@ -17,17 +17,138 @@
     import Slide from "./Slide.svelte";
     import Diagramma from "./Diagramma.svelte";
     import DiagramBuilder from "./DiagramBuilder.svelte";
+    import ConfigDiagramma from "./ConfigDiagramma.svelte";
     import { mount, onMount } from "svelte";
     import { renderMarkdown } from "../lib/markdown";
 
-    $: titolo = $notes.at($selectedNoteIndex)?.title ?? "";
-    $: testo = $notes.at($selectedNoteIndex)?.content ?? "";
-    $: tipo = $notes.at($selectedNoteIndex)?.type ?? "note";
+    let isConfigModalOpen = $state(false);
 
-    let html = "";
-    $: renderMarkdown(testo).then((res) => (html = res));
+    function handleDiagramConfig(e: CustomEvent) {
+        const { diagramType, orientation } = e.detail;
 
-    let visualMode = true;
+        if (diagramType === "class") {
+            localTesto = `digraph G {
+  // @type: class
+  rankdir=${orientation};
+
+  // Inizia a disegnare qui...
+
+  U [label="Umano", shape=box];
+  G [label="Guidatore", shape=box];
+  G -> U [arrowhead=onormal, dir=forward];
+  A [label="Auto", shape=box];
+  A -> G [ label="       " arrowhead=none, dir=none];
+  M [label="Motore", shape=box];
+  A -> M [arrowhead=none, arrowtail=diamond, dir=back];
+}`;
+        } else if (diagramType === "usecase") {
+            localTesto = `digraph G {
+  // @type: usecase
+  rankdir=${orientation};
+
+  // Inizia a disegnare qui...
+
+  Utente [shape=none, image="/uml-actor.svg", label="", labelloc=b, imagescale=true, fixedsize=true, width=0.4, height=0.8];
+  A [label="A", shape=ellipse];
+  B [label="B", shape=ellipse];
+  C [label="C", shape=ellipse];
+  D [label="D", shape=ellipse];
+
+  Utente -> A [arrowhead=vee, dir=forward];
+  Utente -> B [arrowhead=vee, dir=forward];
+  B -> C [label="<<include>>", arrowhead=vee, style=dashed, dir=forward];
+  D -> B [label="<<extend>>", arrowhead=vee, style=dashed, dir=forward];
+
+  subgraph cluster_32 {
+    label="Sistema";
+    A; B; C; D;
+  }
+}`;
+        } else {
+            // Activity (Default TB)
+            if (orientation === "TB") {
+                localTesto = `digraph G {
+  // @type: activity
+  rankdir=TB;
+
+  // Inizia a disegnare qui...
+
+  inizio [shape=circle, style=filled, fillcolor=black, label="", width=0.15, height=0.15]; // Inizio
+  fine [shape=doublecircle, style=filled, fillcolor=black, label="", width=0.12, height=0.12]; // Fine
+  A [label="A", shape=box, style=rounded];
+  B [label="B", shape=box, style=rounded];
+  C [label="C", shape=box, style=rounded];
+  D [shape=diamond, label="", xlabel="", width=0.5, height=0.5, fixedsize=true];
+  F [shape=none, label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
+      <TR><TD PORT="w" ROWSPAN="2" WIDTH="15" HEIGHT="6" BGCOLOR="black"></TD><TD PORT="nw" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD><TD PORT="n" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD><TD PORT="ne" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD><TD PORT="e" ROWSPAN="2" WIDTH="15" HEIGHT="6" BGCOLOR="black"></TD></TR>
+      <TR><TD PORT="sw" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD><TD PORT="s" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD><TD PORT="se" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD></TR>
+    </TABLE>>]; // Fork/Join Orizzontale
+
+  inizio -> A [arrowhead=vee, dir=forward];
+  A -> F [tailport=s, headport=n, arrowhead=vee, dir=forward];
+  F -> C [tailport=sw, arrowhead=vee, dir=forward];
+  F -> D [tailport=se, headport=n, arrowhead=vee, dir=forward];
+  C -> fine [arrowhead=vee, dir=forward];
+  D -> fine [tailport=s, arrowhead=vee, dir=forward];
+  D -> B [tailport=e, arrowhead=vee, dir=forward];
+  B -> fine [arrowhead=vee, dir=forward];
+}`;
+            } else {
+                localTesto = `digraph G {
+  // @type: activity
+  rankdir=LR;
+
+  // Inizia a disegnare qui...
+
+  inizio [shape=circle, style=filled, fillcolor=black, label="", width=0.15, height=0.15]; // Inizio
+  fine [shape=doublecircle, style=filled, fillcolor=black, label="", width=0.12, height=0.12]; // Fine
+  A [label="A", shape=box, style=rounded];
+  B [label="B", shape=box, style=rounded];
+  C [label="C", shape=box, style=rounded];
+  D [shape=diamond, label="", xlabel="", width=0.5, height=0.5, fixedsize=true];
+  F [shape=none, label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
+      <TR><TD PORT="n" COLSPAN="2" WIDTH="6" HEIGHT="15" BGCOLOR="black"></TD></TR>
+      <TR><TD PORT="nw" WIDTH="3" HEIGHT="10" BGCOLOR="black"></TD><TD PORT="ne" WIDTH="3" HEIGHT="10" BGCOLOR="black"></TD></TR>
+      <TR><TD PORT="w" WIDTH="3" HEIGHT="10" BGCOLOR="black"></TD><TD PORT="e" WIDTH="3" HEIGHT="10" BGCOLOR="black"></TD></TR>
+      <TR><TD PORT="sw" WIDTH="3" HEIGHT="10" BGCOLOR="black"></TD><TD PORT="se" WIDTH="3" HEIGHT="10" BGCOLOR="black"></TD></TR>
+      <TR><TD PORT="s" COLSPAN="2" WIDTH="6" HEIGHT="15" BGCOLOR="black"></TD></TR>
+    </TABLE>>]; // Fork/Join Verticale
+
+  inizio -> A [arrowhead=vee, dir=forward];
+  A -> F [headport=w, arrowhead=vee, dir=forward];
+  F -> B [tailport=ne, arrowhead=vee, dir=forward];
+  F -> D [tailport=se, headport=w, arrowhead=vee, dir=forward];
+  B -> fine [arrowhead=vee, dir=forward];
+  D -> fine [tailport=e, arrowhead=vee, dir=forward];
+  D -> C [tailport=s, arrowhead=vee, dir=forward];
+  C -> fine [arrowhead=vee, dir=forward];
+}`;
+            }
+        }
+
+        localTipo = "diagram";
+        isConfigModalOpen = false;
+    }
+    let localTitolo = $state("");
+    let localTesto = $state("");
+    let localTipo = $state("note" as "note" | "quiz" | "slide" | "diagram");
+
+    // Sincronizza lo stato locale quando cambia la nota selezionata
+    $effect(() => {
+        const note = $notes.at($selectedNoteIndex);
+        if (note) {
+            localTitolo = note.title;
+            localTesto = note.content;
+            localTipo = note.type as any;
+        }
+    });
+
+    let html = $state("");
+    $effect(() => {
+        renderMarkdown(localTesto).then((res) => (html = res));
+    });
+
+    let visualMode = $state(true);
 
     const QUIZ_TEMPLATE = `:::quiz Esame di Storia Digitale
 ::time 2min
@@ -57,39 +178,6 @@ console.log(hello);
 ![Immagine 2](/WebApp/image2.png)
 :::`;
 
-    const DIAGRAM_TEMPLATE = `digraph G {
-  Inizio [shape=circle, style=filled, fillcolor=black, label="", width=0.15, height=0.15]; // Inizio
-  A [label="Stato A", shape=box, style=rounded];
-  B [label="Stato B", shape=box, style=rounded];
-  C [label=" Stato C", shape=box, style=rounded];
-  K [shape=diamond, label="Cosa Vuoi?", xlabel="", width=0.5, height=0.5, fixedsize=true];
-  F [shape=none, label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
-      <TR>
-        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD PORT="nw" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD PORT="n" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD PORT="ne" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
-      </TR>
-      <TR>
-        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD PORT="sw" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD PORT="s" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD PORT="se" WIDTH="10" HEIGHT="3" BGCOLOR="black"></TD>
-        <TD WIDTH="15" HEIGHT="3" BGCOLOR="black"></TD>
-      </TR>
-    </TABLE>>]; // Fork/Join
-  Fine [shape=doublecircle, style=filled, fillcolor=black, label="", width=0.12, height=0.12]; // Fine
-
-  Inizio -> A [tailport=s, headport=n, arrowhead=vee, dir=forward];
-  A -> F [tailport=s, headport=n, arrowhead=vee, dir=forward];
-  F -> B [tailport=sw, headport=n, arrowhead=vee, dir=forward];
-  F -> Fine [tailport=se, headport=n, arrowhead=vee, dir=forward];
-  B -> K [tailport=s, headport=n, arrowhead=vee, dir=forward];
-  K -> C [tailport=s, headport=n, arrowhead=vee, dir=forward];
-  K -> Fine [tailport=e, arrowhead=vee, dir=forward];
-}`;
-
     function handleTypeChange(e: Event) {
         const newType = (e.target as HTMLSelectElement).value as
             | "note"
@@ -102,22 +190,26 @@ console.log(hello);
         const defaultContentRegex = /^Contenuto della nota \d+ \.\.\.$/;
 
         const isDefaultContent =
-            !testo ||
-            testo.trim() === "" ||
-            defaultContentRegex.test(testo.trim());
+            !localTesto ||
+            localTesto.trim() === "" ||
+            defaultContentRegex.test(localTesto.trim());
 
         if (isDefaultContent) {
             // Se è vuoto o default, applica subito il template
             if (newType === "quiz") {
-                testo = QUIZ_TEMPLATE;
+                localTesto = QUIZ_TEMPLATE;
+                localTipo = newType;
             } else if (newType === "slide") {
-                testo = SLIDE_TEMPLATE;
+                localTesto = SLIDE_TEMPLATE;
+                localTipo = newType;
             } else if (newType === "diagram") {
-                testo = DIAGRAM_TEMPLATE;
+                localTipo = "diagram";
+                isConfigModalOpen = true;
+            } else {
+                localTipo = newType;
             }
-            tipo = newType;
         } else {
-            // Se c'è contenuto personalizzato, chiedi conferma solo se si passa a Quiz o Slide
+            // Se c'è contenuto personalizzato, chiedi conferma
             if (
                 newType === "quiz" ||
                 newType === "slide" ||
@@ -127,16 +219,22 @@ console.log(hello);
                     text: "Cambiare tipo sovrascriverà il contenuto attuale con il template. Vuoi procedere?",
                     type: "confirmation",
                     confirm: async () => {
-                        if (newType === "quiz") testo = QUIZ_TEMPLATE;
-                        if (newType === "slide") testo = SLIDE_TEMPLATE;
-                        if (newType === "diagram") testo = DIAGRAM_TEMPLATE;
-                        tipo = newType;
+                        if (newType === "quiz") {
+                            localTesto = QUIZ_TEMPLATE;
+                            localTipo = newType;
+                        } else if (newType === "slide") {
+                            localTesto = SLIDE_TEMPLATE;
+                            localTipo = newType;
+                        } else if (newType === "diagram") {
+                            localTipo = "diagram";
+                            isConfigModalOpen = true;
+                        }
                     },
                 });
                 // Ripristiniamo temporaneamente il valore del select in attesa della conferma
-                (e.target as HTMLSelectElement).value = tipo;
+                (e.target as HTMLSelectElement).value = localTipo;
             } else {
-                tipo = newType;
+                localTipo = newType;
             }
         }
     }
@@ -364,7 +462,7 @@ console.log(hello);
         // 2. Rimuove le immagini (![...] (...))
         // 3. Rimuove i blocchi custom (:::...:::)
         // 4. Pulisce simboli markdown residui
-        const cleanText = testo
+        const cleanText = localTesto
             .replace(/```[\s\S]*?```/g, "") // Rimuove blocchi di codice
             .replace(/`[\s\S]*?`/g, "") // Rimuove codice inline
             .replace(/!\[.*?\]\(.*?\)/g, "") // Rimuove immagini
@@ -372,7 +470,7 @@ console.log(hello);
             .replace(/[#*`_~+]/g, "") // Rimuove simboli markdown (incluso + per sottolineatura)
             .trim();
 
-        const textToRead = `${titolo}. ${cleanText}`;
+        const textToRead = `${localTitolo}. ${cleanText}`;
 
         speaking = true;
 
@@ -450,16 +548,24 @@ console.log(hello);
     <form
         class="annotazione"
         on:submit|preventDefault={() =>
-            saveNote({ title: titolo, content: testo, type: tipo })}
+            saveNote({
+                title: localTitolo,
+                content: localTesto,
+                type: localTipo,
+            })}
     >
         <div class="header-edit">
             <div class="field">
                 <label for="titolo">Titolo:</label>
-                <input type="text" id="titolo" bind:value={titolo} />
+                <input type="text" id="titolo" bind:value={localTitolo} />
             </div>
             <div class="field type-selector">
                 <label for="tipo">Tipo:</label>
-                <select id="tipo" value={tipo} on:change={handleTypeChange}>
+                <select
+                    id="tipo"
+                    value={localTipo}
+                    on:change={handleTypeChange}
+                >
                     <option value="note">📝 Nota</option>
                     <option value="quiz">❓ Quiz</option>
                     <option value="slide">🎞️ Slide</option>
@@ -468,26 +574,55 @@ console.log(hello);
             </div>
         </div>
 
-        <label for="testo">Testo (Markdown):</label>
+        <label for="testo"
+            >Testo ({localTipo === "diagram" ? "DOT" : "Markdown"}):</label
+        >
         <div class="editor-container">
-            {#if tipo === "diagram" && visualMode}
+            {#if localTipo === "diagram" && visualMode}
+                {@const diagramMeta = {
+                    type:
+                        localTesto
+                            .match(
+                                /\/\/ @type:\s*(activity|class|usecase)/i,
+                            )?.[1]
+                            ?.toUpperCase() || "ACTIVITY",
+                    rank:
+                        localTesto
+                            .match(/rankdir\s*=\s*(TB|BT|LR|RL)/i)?.[1]
+                            ?.toUpperCase() || "TB",
+                }}
                 <div class="diagram-workspace">
-                    <Diagramma content={testo} />
+                    <div class="diagram-info-bar">
+                        <span
+                            >🏷️ <b>TIPO:</b>
+                            {diagramMeta.type === "USECASE"
+                                ? "CASI D'USO"
+                                : diagramMeta.type}</span
+                        >
+                        <span>🧭 <b>ORIENTAMENTO:</b> {diagramMeta.rank}</span>
+                        <button
+                            class="btn-reconfig"
+                            type="button"
+                            on:click={() => (isConfigModalOpen = true)}
+                            >⚙️ Configura</button
+                        >
+                    </div>
+                    <Diagramma content={localTesto} />
                 </div>
             {:else}
-                <textarea id="testo" bind:value={testo}></textarea>
+                <textarea id="testo" bind:value={localTesto}></textarea>
             {/if}
             <div class="sidebar-tools">
                 <button class="save" type="submit"
-                    >💾 SALVA {tipo === "quiz"
+                    >💾 SALVA {localTipo === "quiz"
                         ? "QUIZ"
-                        : tipo === "slide"
+                        : localTipo === "slide"
                           ? "SLIDE"
-                          : tipo === "diagram"
+                          : localTipo === "diagram"
                             ? "DIAGRAMMA"
                             : "NOTA"}</button
                 >
-                {#if tipo === "diagram"}
+                {#if localTipo === "diagram"}
                     <button
                         class="toggle-mode"
                         type="button"
@@ -499,24 +634,25 @@ console.log(hello);
                     </button>
                 {/if}
 
-                {#if tipo === "diagram" && visualMode}
+                {#if localTipo === "diagram" && visualMode}
                     <DiagramBuilder
-                        content={testo}
-                        onUpdate={(newContent) => (testo = newContent)}
+                        content={localTesto}
+                        onUpdate={(newContent: string) =>
+                            (localTesto = newContent)}
                     />
                 {:else}
                     <div class="markdown-legend">
                         <h4>
-                            {tipo === "quiz"
+                            {localTipo === "quiz"
                                 ? "Quiz Help"
-                                : tipo === "slide"
+                                : localTipo === "slide"
                                   ? "Slide Help"
-                                  : tipo === "diagram"
+                                  : localTipo === "diagram"
                                     ? "Graphviz Help"
                                     : "Markdown Help"}
                         </h4>
                         <ul>
-                            {#if tipo === "quiz"}
+                            {#if localTipo === "quiz"}
                                 <li>:::quiz [Tititlo]</li>
                                 <li>::time [60s|5min]</li>
                                 <li>::ok [punti]</li>
@@ -526,7 +662,7 @@ console.log(hello);
                                 <li>- [ ] Sbagliata</li>
                                 <li>- [x] Corretta</li>
                                 <li>::: (chiusura)</li>
-                            {:else if tipo === "slide"}
+                            {:else if localTipo === "slide"}
                                 <li>:::slide [Titolo]</li>
                                 <li>![Alt](url)</li>
                                 <li>--- (separatore)</li>
@@ -534,7 +670,7 @@ console.log(hello);
                                 <li>codice</li>
                                 <li>```</li>
                                 <li>::: (chiusura)</li>
-                            {:else if tipo === "diagram"}
+                            {:else if localTipo === "diagram"}
                                 <li>digraph G &#123; ... &#125;</li>
                                 <li>A -&gt; B;</li>
                                 <li>B [shape=diamond, xlabel="?"];</li>
@@ -559,7 +695,7 @@ console.log(hello);
     <div class="annotazione">
         <span class="pin">📍 </span>
         <div class="header-view">
-            <h2>{titolo}</h2>
+            <h2>{localTitolo}</h2>
             <button
                 class="btn-speech"
                 on:click={toggleSpeech}
@@ -568,13 +704,19 @@ console.log(hello);
                 {speaking ? "⏹️" : "🔊"}
             </button>
         </div>
-        {#if tipo === "diagram"}
-            <Diagramma content={testo} />
+        {#if localTipo === "diagram"}
+            <Diagramma content={localTesto} />
         {:else}
             <div class="testo" use:mountComponents={html}>{@html html}</div>
         {/if}
     </div>
 {/if}
+
+<ConfigDiagramma
+    isOpen={isConfigModalOpen}
+    on:confirm={handleDiagramConfig}
+    on:close={() => (isConfigModalOpen = false)}
+/>
 
 <!-- [ Style ] ---------------------------------------------------------------------------------->
 <style>
@@ -609,6 +751,68 @@ console.log(hello);
         text-transform: uppercase;
         letter-spacing: 1px;
         flex: 1;
+    }
+
+    .diagram-workspace {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .diagram-info-bar {
+        background-color: #b71c1c; /* Deep vintage red */
+        background-image: linear-gradient(
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px
+        );
+        background-size: 100% 2px;
+        color: #fff;
+        padding: 5px 15px;
+        border-radius: 2px;
+        display: flex;
+        gap: 30px;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 0.85rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+        border: 1px solid #8e0000;
+        width: fit-content;
+        margin-bottom: 5px;
+        transform: rotate(-0.5deg); /* Slight manual tilt */
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Dymo tape effect: slight white border around text */
+    .diagram-info-bar span {
+        text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .diagram-info-bar b {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.7rem;
+    }
+
+    .btn-reconfig {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 2px 8px;
+        font-size: 0.65rem;
+        cursor: pointer;
+        border-radius: 2px;
+        margin-left: auto;
+        text-transform: uppercase;
+        font-family: inherit;
+        font-weight: bold;
+    }
+
+    .btn-reconfig:hover {
+        background: rgba(255, 255, 255, 0.3);
     }
 
     .header-view {
@@ -752,7 +956,7 @@ console.log(hello);
         background-color: #ffffff;
         font-size: 2rem; /* Larger title */
         font-weight: bold;
-        text-align: center; /* Centered */
+        text-align: left; /* Centered */
     }
 
     input[type="text"]:focus {

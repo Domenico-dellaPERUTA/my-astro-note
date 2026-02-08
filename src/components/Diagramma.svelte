@@ -20,6 +20,7 @@
                     fit: false,
                     zoom: true,
                 })
+                .addImage("/uml-actor.svg", "40px", "80px")
                 .renderDot(content)
                 .on("end", () => {
                     // console.log("Rendered");
