@@ -290,6 +290,72 @@
     $: currentRankdir = (content
         .match(/rankdir\s*=\s*(TB|BT|LR|RL)/i)?.[1]
         ?.toUpperCase() || "TB") as "TB" | "BT" | "LR" | "RL";
+
+    // Estraggo tutti gli ID dei nodi esistenti per le combobox
+    $: existingNodeIds = (() => {
+        const ids = new Set<string>();
+
+        // 1. Pulizia del contenuto per l'estrazione degli ID
+        let cleanContent = content
+            .replace(/\/\/.*$/gm, "") // Rimuove commenti a riga singola
+            .replace(/\/\*[\s\S]*?\*\//g, "") // Rimuove commenti multi-riga
+            .replace(/"[^"]*"/g, "") // Rimuove stringhe tra virgolette
+            .replace(/\[[^\]]*\]/g, ""); // Rimuove blocchi di attributi [...]
+
+        // 2. Parole chiave DOT da escludere
+        const dotKeywords = [
+            "digraph",
+            "graph",
+            "subgraph",
+            "rankdir",
+            "node",
+            "edge",
+            "label",
+            "shape",
+            "style",
+            "fillcolor",
+            "width",
+            "height",
+            "fixedsize",
+            "xlabel",
+            "labelloc",
+            "imagescale",
+            "tailport",
+            "headport",
+            "arrowhead",
+            "arrowtail",
+            "dir",
+            "circle",
+            "doublecircle",
+            "box",
+            "diamond",
+            "ellipse",
+            "none",
+            "solid",
+            "dashed",
+            "rounded",
+            "filled",
+            "black",
+            "white",
+            "TB",
+            "BT",
+            "LR",
+            "RL",
+            "strict",
+        ];
+
+        // 3. Cerchiamo identificatori (ID)
+        // Gli ID in DOT possono essere alfanumerici (non inizianti con cifra) o stringhe (già rimosse)
+        const matches = cleanContent.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gm);
+        for (const match of matches) {
+            const id = match[1];
+            if (id && !dotKeywords.includes(id)) {
+                ids.add(id);
+            }
+        }
+
+        return Array.from(ids).sort();
+    })();
 </script>
 
 {#if $userRole === "admin"}
@@ -378,6 +444,7 @@
                             type="text"
                             placeholder="ID A"
                             bind:value={node1Id}
+                            list="node-ids"
                         />
                         <select bind:value={node1Port} class="mini-select">
                             {#each ports as p}<option value={p.value}
@@ -391,6 +458,7 @@
                             type="text"
                             placeholder="ID B"
                             bind:value={node2Id}
+                            list="node-ids"
                         />
                         <select bind:value={node2Port} class="mini-select">
                             {#each ports as p}<option value={p.value}
@@ -467,6 +535,7 @@
                                 type="text"
                                 placeholder="ID elemento"
                                 bind:value={groupNodeIds[i]}
+                                list="node-ids"
                             />
                             <button
                                 type="button"
@@ -489,6 +558,13 @@
             </div>
         </div>
     </div>
+
+    <!-- Datalist per gli ID dei nodi -->
+    <datalist id="node-ids">
+        {#each existingNodeIds as id}
+            <option value={id} />
+        {/each}
+    </datalist>
 {/if}
 
 <style>
