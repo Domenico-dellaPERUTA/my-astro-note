@@ -130,6 +130,14 @@
         $clipboardNote.id !== nota.id &&
         !isDescendant($clipboardNote, nota.id);
 
+    // Espandi automaticamente se un discendente è selezionato
+    $: if (
+        indiceSelezionato !== undefined &&
+        isDescendant(nota, indiceSelezionato)
+    ) {
+        expanded = true;
+    }
+
     // Calculate indentation based on level
     $: indentStyle = `padding-left: ${livello * 15 + 10}px`;
 </script>
