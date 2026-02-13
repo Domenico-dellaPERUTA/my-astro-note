@@ -72,7 +72,7 @@
         scene = new THREE.Scene();
 
         // --- Configurazione Camera (talking head shot) ---
-        camera = new THREE.PerspectiveCamera(30.0, 1.0, 0.1, 20.0);
+        camera = new THREE.PerspectiveCamera(30.0, 0.57, 0.1, 20.0);
         camera.position.set(0.0, 1.5, 2.0);
         camera.lookAt(0, 1.4, 0);
 
@@ -83,7 +83,7 @@
             alpha: true, // Sfondo trasparente
         });
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(400, 400);
+        renderer.setSize(400, 700); // Altezza ulteriormente aumentata (v2)
         renderer.setClearColor(0x000000, 0);
 
         // --- Illuminazione ---
@@ -284,7 +284,7 @@
 
                 // Posizionamento per inquadratura "Talking Head"
                 gltf.scene.position.x = -center.x;
-                gltf.scene.position.z = 1.2;
+                gltf.scene.position.z = 1.15;
                 gltf.scene.position.y = 1.4 - size.y * scale * 0.86;
                 gltf.scene.rotation.set(0, Math.PI, 0); // Ruotiamo verso la camera
             },
@@ -541,21 +541,20 @@
 
 <style>
     .avatar-canvas {
-        width: 300px;
-        height: 300px;
+        width: 100%;
+        max-width: 400px;
+        height: 700px; /* Altezza aumentata (v2) */
         display: block;
         margin: 0 auto;
-        /* Effetto Glassmorphism */
+        /* Effetto Glassmorphism rettangolare */
         background: linear-gradient(
             135deg,
-            rgba(74, 144, 226, 0.15) 0%,
-            rgba(142, 84, 233, 0.15) 100%
+            rgba(74, 144, 226, 0.1) 0%,
+            rgba(142, 84, 233, 0.1) 100%
         );
-        border-radius: 50%;
-        border: 3px solid rgba(255, 255, 255, 0.4);
-        box-shadow:
-            0 8px 32px 0 rgba(31, 38, 135, 0.4),
-            inset 0 0 30px rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
+        border-radius: 20px; /* Angoli leggermente arrotondati invece di cerchio */
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(8px);
     }
 </style>
