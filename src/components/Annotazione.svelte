@@ -18,6 +18,7 @@
     import Diagramma from "./Diagramma.svelte";
     import DiagramBuilder from "./DiagramBuilder.svelte";
     import ConfigDiagramma from "./ConfigDiagramma.svelte";
+    import AvatarParlante from "./AvatarParlante.svelte";
     import { mount, onMount } from "svelte";
     import { renderMarkdown } from "../lib/markdown";
 
@@ -413,7 +414,9 @@ console.log(hello);
             console.error(errorMessage + ":", error);
         }
     }
-    let speaking = false;
+    let speaking = $state(false);
+    let showAvatar = $state(false);
+    let isSpeaking = $state(false); // Real-time speaking indicator
     let audio: HTMLAudioElement | null = null;
     let speechUtterance: SpeechSynthesisUtterance | null = null;
     let voices: SpeechSynthesisVoice[] = [];
@@ -442,6 +445,8 @@ console.log(hello);
             window.speechSynthesis.cancel();
         }
         speaking = false;
+        showAvatar = false;
+        isSpeaking = false;
     }
 
     // Funzione per aspettare il caricamento delle voci (problema comune del browser)
@@ -473,6 +478,7 @@ console.log(hello);
         const textToRead = `${localTitolo}. ${cleanText}`;
 
         speaking = true;
+        showAvatar = true;
 
         // Annulla eventuali letture precedenti per sicurezza
         window.speechSynthesis.cancel();
@@ -533,10 +539,39 @@ console.log(hello);
 
         speechUtterance.onend = () => {
             speaking = false;
+            showAvatar = false;
+            isSpeaking = false;
         };
 
         speechUtterance.onerror = () => {
             speaking = false;
+            showAvatar = false;
+            isSpeaking = false;
+        };
+
+        // Boundary events for real-time speaking detection
+        let speakingTimeout: any;
+        speechUtterance.onboundary = (event) => {
+            if (event.name === "word") {
+                isSpeaking = true;
+                clearTimeout(speakingTimeout);
+                speakingTimeout = setTimeout(() => {
+                    isSpeaking = false;
+                }, 180); // Lowered from 400ms for sharper word separation
+            }
+        };
+
+        speechUtterance.onstart = () => {
+            console.log("[TTS] Lettura iniziata");
+            isSpeaking = true;
+        };
+
+        speechUtterance.onend = () => {
+            console.log("[TTS] Lettura terminata");
+            speaking = false;
+            showAvatar = false;
+            isSpeaking = false;
+            clearTimeout(speakingTimeout);
         };
 
         window.speechSynthesis.speak(speechUtterance);
@@ -712,6 +747,18 @@ console.log(hello);
     </div>
 {/if}
 
+{#if showAvatar}
+    <div class="avatar-dialog">
+        <div class="avatar-container">
+            <h3>🎙️ Segretaria Virtuale</h3>
+            <AvatarParlante {speaking} {isSpeaking} />
+            <button class="btn-close-avatar" on:click={stopSpeech}
+                >❌ Chiudi</button
+            >
+        </div>
+    </div>
+{/if}
+
 <ConfigDiagramma
     isOpen={isConfigModalOpen}
     on:confirm={handleDiagramConfig}
@@ -809,6 +856,7 @@ console.log(hello);
         text-transform: uppercase;
         font-family: inherit;
         font-weight: bold;
+        transition: all 0.2s;
     }
 
     .btn-reconfig:hover {
@@ -827,6 +875,55 @@ console.log(hello);
     .header-view h2 {
         border-bottom: none;
         padding-bottom: 0;
+    }
+
+    /* Avatar Dialog */
+    .avatar-dialog {
+        position: fixed;
+        top: 80px;
+        left: 20px;
+        z-index: 1000;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .avatar-container {
+        background: #222;
+        border: 3px solid var(--highlight);
+        padding: 20px;
+        border-radius: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .avatar-container h3 {
+        color: var(--highlight);
+        margin: 0;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 1rem;
+    }
+
+    .btn-close-avatar {
+        background: #d45d5d;
+        color: white;
+        border: none;
+        padding: 5px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
     }
 
     .btn-speech {
