@@ -18,6 +18,7 @@ export interface Note {
   content: string;
   parent_id?: number | null;
   type?: 'note' | 'quiz' | null;
+  position: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -26,7 +27,7 @@ export const notesDb = {
   async getAll(): Promise<Note[]> {
     try {
       const [rows] = await pool.query<any[]>(
-        'SELECT * FROM notes ORDER BY created_at ASC' // Change order logic if needed for tree
+        'SELECT * FROM notes ORDER BY parent_id, position ASC, created_at ASC'
       );
       return rows as Note[];
     } catch (error) {
@@ -69,9 +70,9 @@ export const notesDb = {
     }
   },
 
-  async update(id: number, title: string, content: string, parentId?: number | null, type?: 'note' | 'quiz'): Promise<void> {
+  async update(id: number, title: string, content: string, parentId?: number | null, type?: 'note' | 'quiz', position?: number): Promise<void> {
     try {
-      if (typeof parentId !== 'undefined' || typeof type !== 'undefined') {
+      if (typeof parentId !== 'undefined' || typeof type !== 'undefined' || typeof position !== 'undefined') {
         const fields = ['title = ?', 'content = ?', 'updated_at = NOW()'];
         const values: any[] = [title, content];
 
@@ -82,6 +83,10 @@ export const notesDb = {
         if (typeof type !== 'undefined') {
           fields.push('type = ?');
           values.push(type);
+        }
+        if (typeof position !== 'undefined') {
+          fields.push('position = ?');
+          values.push(position);
         }
         values.push(id);
 

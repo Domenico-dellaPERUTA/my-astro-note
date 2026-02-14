@@ -22,6 +22,22 @@
         expanded = !expanded;
     }
 
+    let showMenu = false;
+
+    function toggleMenu() {
+        showMenu = !showMenu;
+    }
+
+    function closeMenu() {
+        showMenu = false;
+    }
+
+    // Chiudi il menu se si clicca altrove nella pagina (gestione globale opzionale,
+    // ma qui usiamo un backdrop locale o event listener su window per sicurezza)
+    function handleGlobalClick() {
+        if (showMenu) closeMenu();
+    }
+
     /**
      * Fallback per la copia negli appunti.
      * Usato quando navigator.clipboard non è disponibile (es. contesti non HTTPS).
@@ -124,6 +140,32 @@
         );
     }
 
+    async function reorder(direction: "up" | "down") {
+        try {
+            const response = await fetch("/api/note/reorder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ noteId: nota.id, direction }),
+            });
+
+            if (!response.ok) throw new Error("Errore nel riordinamento");
+
+            await loadNotesFromDb();
+            message.set({
+                text: "Nota spostata con successo",
+                type: "success",
+            });
+        } catch (error) {
+            console.error(error);
+            message.set({
+                text: "Impossibile spostare la nota",
+                type: "error",
+            });
+        }
+    }
+
+    // Calcoliamo se il bottone Incolla è abilitato per questa voce
+
     // Calcoliamo se il bottone Incolla è abilitato per questa voce
     $: canPaste =
         $clipboardNote &&
@@ -141,6 +183,8 @@
     // Calculate indentation based on level
     $: indentStyle = `padding-left: ${livello * 15 + 10}px`;
 </script>
+
+<svelte:window on:click={handleGlobalClick} />
 
 <li class="menu-voce-container">
     <div class="menu-voce">
@@ -168,82 +212,141 @@
         </button>
 
         {#if $userRole === "admin"}
-            <div class="actions">
-                <!-- Pulsante Aggiungi Sotto-nota -->
+            <div class="menu-container">
                 <button
                     type="button"
-                    class="action-btn add-child"
-                    title="Aggiungi sotto-nota"
-                    on:click|stopPropagation={() => dispatch("add-child", nota)}
+                    class="menu-trigger {showMenu ? 'active' : ''}"
+                    on:click|stopPropagation={toggleMenu}
+                    title="Menu azioni"
                 >
-                    ➕
+                    🛠️
                 </button>
 
-                <!-- Pulsante Taglia (✂️) - Solo se clipboard vuota -->
-                {#if !$clipboardNote}
-                    <button
-                        type="button"
-                        class="action-btn cut"
-                        title="Taglia (sposta)"
-                        on:click|stopPropagation={() => tagliaNota(nota)}
+                {#if showMenu}
+                    <!-- Backdrop invisibile per chiudere cliccando fuori -->
+                    <div
+                        class="menu-backdrop"
+                        on:click|stopPropagation={closeMenu}
+                        role="presentation"
+                    ></div>
+
+                    <div
+                        class="dropdown-menu"
+                        transition:slide={{ duration: 100 }}
                     >
-                        ✂️
-                    </button>
+                        <button
+                            type="button"
+                            class="menu-item"
+                            on:click|stopPropagation={() => {
+                                dispatch("add-child", nota);
+                                closeMenu();
+                            }}
+                        >
+                            <span class="menu-icon">➕</span> Aggiungi sotto-nota
+                        </button>
+
+                        {#if !$clipboardNote}
+                            <button
+                                type="button"
+                                class="menu-item"
+                                on:click|stopPropagation={() => {
+                                    tagliaNota(nota);
+                                    closeMenu();
+                                }}
+                            >
+                                <span class="menu-icon">✂️</span> Taglia
+                            </button>
+                        {/if}
+
+                        {#if canPaste}
+                            <button
+                                type="button"
+                                class="menu-item"
+                                on:click|stopPropagation={() => {
+                                    incollaNota(nota);
+                                    closeMenu();
+                                }}
+                            >
+                                <span class="menu-icon">📋</span> Incolla qui
+                            </button>
+                        {/if}
+
+                        <div
+                            style="border-top: 1px solid #444; margin: 4px 0;"
+                        ></div>
+
+                        <button
+                            type="button"
+                            class="menu-item"
+                            on:click|stopPropagation={() => {
+                                reorder("up");
+                                closeMenu();
+                            }}
+                        >
+                            <span class="menu-icon">⬆️</span> Sposta Su
+                        </button>
+
+                        <button
+                            type="button"
+                            class="menu-item"
+                            on:click|stopPropagation={() => {
+                                reorder("down");
+                                closeMenu();
+                            }}
+                        >
+                            <span class="menu-icon">⬇️</span> Sposta Giù
+                        </button>
+
+                        <div
+                            style="border-top: 1px solid #444; margin: 4px 0;"
+                        ></div>
+
+                        <button
+                            type="button"
+                            class="menu-item"
+                            on:click|stopPropagation={() => {
+                                copiaLink(nota);
+                                closeMenu();
+                            }}
+                        >
+                            <span class="menu-icon">🔗</span> Copia Link
+                        </button>
+
+                        <button
+                            type="button"
+                            class="menu-item"
+                            on:click|stopPropagation={() => {
+                                if ($isEdit && indiceSelezionato === nota.id) {
+                                    isEdit.set(false);
+                                } else {
+                                    dispatch("select", nota);
+                                    dispatch("edit", nota);
+                                }
+                                closeMenu();
+                            }}
+                        >
+                            <span class="menu-icon">✏️</span>
+                            {$isEdit && indiceSelezionato === nota.id
+                                ? "Fine Modifica"
+                                : "Modifica"}
+                        </button>
+
+                        <div
+                            style="border-top: 1px solid #444; margin: 4px 0;"
+                        ></div>
+
+                        <button
+                            type="button"
+                            class="menu-item delete"
+                            on:click|stopPropagation={() => {
+                                dispatch("delete", nota);
+                                closeMenu();
+                            }}
+                        >
+                            <span class="menu-icon">🗑️</span> Elimina
+                        </button>
+                    </div>
                 {/if}
-
-                <!-- Pulsante Incolla (📋) - Solo se clipboard piena e target valido -->
-                {#if canPaste}
-                    <button
-                        type="button"
-                        class="action-btn paste"
-                        title="Incolla qui dentro"
-                        on:click|stopPropagation={() => incollaNota(nota)}
-                    >
-                        📋
-                    </button>
-                {/if}
-
-                <!-- Pulsante Copia Link -->
-                <button
-                    type="button"
-                    class="action-btn copy-link"
-                    title="Copia Link Markdown"
-                    on:click|stopPropagation={() => copiaLink(nota)}
-                >
-                    🔗
-                </button>
-
-                <!-- Pulsante Modifica (Toggle) -->
-                <button
-                    type="button"
-                    class="action-btn edit {$isEdit &&
-                    indiceSelezionato === nota.id
-                        ? 'active'
-                        : ''}"
-                    title={$isEdit && indiceSelezionato === nota.id
-                        ? "Fine Modifica"
-                        : "Modifica"}
-                    on:click|stopPropagation={() => {
-                        if ($isEdit && indiceSelezionato === nota.id) {
-                            isEdit.set(false);
-                        } else {
-                            dispatch("select", nota); // Seleziona prima
-                            dispatch("edit", nota); // Poi attiva edit
-                        }
-                    }}
-                >
-                    ✏️
-                </button>
-
-                <!-- Pulsante Elimina -->
-                <button
-                    type="button"
-                    class="action-btn delete"
-                    title="Elimina"
-                    on:click|stopPropagation={() => dispatch("delete", nota)}
-                >
-                    🗑️
-                </button>
             </div>
         {/if}
     </div>
@@ -316,24 +419,78 @@
         box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     }
 
-    .actions {
-        display: flex;
-        padding-right: 5px;
-        opacity: 0.6;
-        transition: opacity 0.2s;
-    }
-
-    .menu-voce:hover .actions {
+    .menu-voce:hover .menu-trigger {
         opacity: 1;
     }
 
-    .action-btn {
+    .menu-container {
+        position: relative;
+    }
+
+    .menu-trigger {
         background: none;
         border: none;
+        color: #888;
         cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0 5px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        border-radius: 4px;
+    }
+
+    .menu-trigger:hover,
+    .menu-trigger.active {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        opacity: 1;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background-color: #2d2d2d;
+        border: 1px solid #444;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        min-width: 180px;
+        overflow: hidden;
+        padding: 4px 0;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center; /* Allinea verticalmente icona e testo */
+        gap: 8px; /* Spazio tra icona e testo */
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        padding: 8px 12px;
+        color: #ccc;
+        cursor: pointer;
+        font-family: var(--font-main);
         font-size: 0.9rem;
-        margin-left: 5px;
-        padding: 2px;
+        transition: background-color 0.2s;
+    }
+
+    .menu-item:hover {
+        background-color: #3d3d3d;
+        color: #fff;
+    }
+
+    .menu-item.delete:hover {
+        background-color: #4a1a1a;
+        color: #ff6b6b;
+    }
+
+    /* Icone nel menu */
+    .menu-icon {
+        width: 20px;
+        text-align: center;
+        display: inline-block;
     }
 
     .toggle-btn {
@@ -349,17 +506,5 @@
 
     .spacer {
         width: 20px;
-    }
-
-    .delete:hover {
-        filter: grayscale(0);
-        transform: scale(1.1);
-    }
-
-    .action-btn.edit.active {
-        background-color: #d45d5d;
-        border-radius: 50%;
-        box-shadow: 0 0 8px rgba(212, 93, 93, 0.6);
-        transform: scale(1.1);
     }
 </style>

@@ -7,41 +7,27 @@ order: 3
 
 In questa sezione imparerai a gestire i tuoi contenuti.
 
-## Creare una nuova nota
-Fai clic sul pulsante **➕** nel menu laterale per creare una nuova nota alla radice. Se vuoi creare una nota all'interno di un'altra, usa l'icona "aggiungi" accanto al titolo della nota madre.
+## Menu Azioni
+Accanto a ogni nota nel menu laterale, troverai un'icona **🛠️** (Menu Azioni). Clicca su questa icona per accedere alle opzioni disponibili:
 
-## Modificare una nota
-Seleziona una nota dalla lista e fai clic su **📝 Modifica**. Ricordati di salvare le modifiche!
+- **➕ Aggiungi sotto-nota**: Crea una nuova nota figlia.
+- **✂️ Taglia**: Per spostare la nota.
+- **📋 Incolla qui**: Per incollare una nota precedentemente tagliata come figlia di questa.
+- **🔗 Copia Link**: Copia il link interno alla nota per creare collegamenti.
+- **📝 Modifica / Fine Modifica**: Attiva o disattiva la modalità modifica per la nota.
+- **🗑️ Elimina**: Cancella la nota e tutti i suoi contenuti (includi i figli!).
 
-## Eliminare una nota
-Fai clic sull'icona **🗑️** per eliminare una nota. **Attenzione**: l'eliminazione di una nota eliminerà anche tutte le sue "figlie".
+## Creare una nota radice
+Per creare una nuova nota principale (senza genitori), usa il pulsante **➕** che trovi in cima al menu laterale, accanto al titolo "LISTA NOTE".
 
 ## Spostare una nota (Taglia e Incolla)
-Puoi riorganizzare l'albero delle note spostando una nota in una nuova posizione.
+1. Apri il menu **🛠️** della nota da spostare e scegli **Taglia** ✂️.
+2. Vai sulla nota di destinazione, apri il menu **🛠️** e scegli **Incolla qui** 📋.
+3. Oppure, per spostarla alla radice, usa il pulsante **📋** in cima al menu laterale.
 
-1.  **Taglia**: Accanto al titolo della nota che vuoi spostare, fai clic sull'icona delle forbici **✂️**. La nota entrerà in modalità "taglio".
-2.  **Scegli la destinazione**:
-    *   Per spostarla **all'interno** di un'altra nota: fai clic sull'icona della cartella/appunti **📋** accanto alla nota di destinazione.
-    *   Per spostarla alla **radice** (root): fai clic sul pulsante **📋 Incolla alla radice** che appare in cima al menu laterale.
-3.  **Annulla**: Se cambi idea, fai clic sulla **❌** accanto alla nota tagliata per annullare l'operazione.
+## Gestione Contenuti
+Una volta selezionata una nota, puoi modificarne il titolo e il contenuto centrale. Ricordati di salvare le modifiche con il pulsante "Salva" in basso.
 
-> [!NOTE]
-> Quando sposti una nota, tutti i suoi contenuti e le sue note "figlie" verranno spostati insieme a lei, mantenendo la gerarchia intatta.
-
-## Formattazione Avanzata
-L'editor supporta il classico Markdown ma con alcune **funzionalità speciali**:
-
-- **Sottolineato**: Usa il doppio più per sottolineare il testo.
-  - Esempio: `++testo sottolineato++` → <u>testo sottolineato</u>
-- **Stile "Mano"**: Il testo in corsivo (`*testo*` o `_testo_`) viene visualizzato con un font che simula la scrittura a mano, ideale per appunti personali o enfasi.
-
-## Collegamenti tra Note
-Puoi creare facilmente collegamenti interni tra le tue note per costruire una wiki personale.
-
-1. Entra in modalità **Modifica** ✏️.
-2. Nel menu laterale, accanto al titolo della nota che vuoi linkare, clicca sull'icona della catena **🔗**.
-3. Il link Markdown (es. `[Titolo](/?id=123)`) verrà copiato negli appunti.
-4. Incollalo nel testo della nota che stai scrivendo.
 
 ## Gestione Media (Immagini e File)
 Se sei un amministratore, puoi gestire i file multimediali tramite il pulsante **📁 File** nella barra superiore.
