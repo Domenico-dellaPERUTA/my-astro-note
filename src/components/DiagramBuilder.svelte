@@ -23,6 +23,8 @@
     let node1Id = "";
     let node2Id = "";
     let linkLabel = "";
+    let linkTailLabel = ""; // Cardinality A (Source)
+    let linkHeadLabel = ""; // Cardinality B (Target)
     let linkType = "association";
     let isBidirectional = false;
 
@@ -154,6 +156,20 @@
         if (node1Port) attrs.push(`tailport=${node1Port}`);
         if (node2Port) attrs.push(`headport=${node2Port}`);
 
+        // Cardinality (Class Diagram)
+        if (diagramType === "class") {
+            if (linkTailLabel || linkHeadLabel) {
+                attrs.push(`labeldistance=1`); // Increase distance to clear arrowheads
+                attrs.push(`labelangle=30`); // Angle to place label to the side
+            }
+            if (linkTailLabel) {
+                attrs.push(`taillabel="${linkTailLabel}"`);
+            }
+            if (linkHeadLabel) {
+                attrs.push(`headlabel="${linkHeadLabel}"`);
+            }
+        }
+
         let head = "vee";
         let tail = "none";
         let style = "solid";
@@ -221,6 +237,8 @@
         node1Port = "";
         node2Port = "";
         linkLabel = "";
+        linkTailLabel = "";
+        linkHeadLabel = "";
     }
 
     function addGroupIdField() {
@@ -473,6 +491,20 @@
                         placeholder="Etichetta (opz)"
                         bind:value={linkLabel}
                     />
+                    {#if diagramType === "class"}
+                        <input
+                            type="text"
+                            placeholder="Card. A (es. 1)"
+                            bind:value={linkTailLabel}
+                            class="cardinality-input"
+                        />
+                        <input
+                            type="text"
+                            placeholder="Card. B (es. *)"
+                            bind:value={linkHeadLabel}
+                            class="cardinality-input"
+                        />
+                    {/if}
                     <select bind:value={linkType} class="narrow-select">
                         {#if diagramType === "activity"}
                             <option value="association">Transizione (➔)</option>
@@ -734,5 +766,10 @@
         gap: 4px;
         max-height: 150px;
         overflow-y: auto;
+    }
+
+    .cardinality-input {
+        max-width: 80px;
+        font-family: monospace;
     }
 </style>
