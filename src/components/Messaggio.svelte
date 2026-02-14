@@ -7,6 +7,39 @@
 <!-- [ Controller ] ------------------------------------------------------------------------------>
 <script lang="ts">
   import { message } from "../stores/notesStore";
+  import AvatarParlante from "./AvatarParlante.svelte";
+  import { onMount, onDestroy } from "svelte";
+
+  let speaking = false;
+  let isSpeaking = false;
+  let audio: SpeechSynthesisUtterance | null = null;
+  let voices: SpeechSynthesisVoice[] = [];
+
+  // Carica le voci
+  function loadVoices() {
+    if (typeof window === "undefined") return;
+    voices = window.speechSynthesis.getVoices();
+  }
+
+  onMount(() => {
+    loadVoices();
+    if (
+      typeof window !== "undefined" &&
+      window.speechSynthesis.onvoiceschanged !== undefined
+    ) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  });
+
+  onDestroy(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.speechSynthesis &&
+      window.speechSynthesis.speaking
+    ) {
+      window.speechSynthesis.cancel();
+    }
+  });
 
   const confirmDialog = async () => {
     if ($message.confirm) {
@@ -16,14 +49,90 @@
   };
 
   function closeDialog() {
+    if (typeof window === "undefined") return;
+
     const dialog = document.getElementById("mioDialog") as HTMLDialogElement;
+    // Ferma il parlato e l'animazione
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+    speaking = false;
+    isSpeaking = false;
+
+    // Chiudi dialog e resetta messaggio
     message.set({ text: "", type: "info", confirm: undefined });
-    dialog.close();
+    if (dialog) dialog.close();
+  }
+
+  // Monitora i messaggi per avviare la lettura
+  $: if ($message.text) {
+    speakMessage($message.text);
+  }
+
+  function speakMessage(text: string) {
+    if (!text || typeof window === "undefined") return;
+
+    // Annulla eventuali letture precedenti
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "it-IT";
+
+    // Selezione voce (logica semplificata da Annotazione.svelte)
+    if (voices.length === 0) voices = window.speechSynthesis.getVoices();
+
+    const preferredVoice =
+      voices.find((v) => v.lang.startsWith("it") && v.name.includes("Emma")) ||
+      voices.find(
+        (v) => v.lang.startsWith("it") && v.name.includes("Federica"),
+      ) ||
+      voices.find((v) => v.lang.startsWith("it") && !v.name.includes("Google")); // Fallback
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    speaking = true;
+    isSpeaking = true;
+
+    let speakingTimeout: any;
+    utterance.onboundary = (event) => {
+      if (event.name === "word") {
+        isSpeaking = true;
+        clearTimeout(speakingTimeout);
+        speakingTimeout = setTimeout(() => {
+          isSpeaking = false;
+        }, 150);
+      }
+    };
+
+    utterance.onend = () => {
+      // Quando finisce di parlare, l'avatar smette di muovere la bocca
+      // MA rimane visibile finché il dialog è aperto (gestito dal template)
+      isSpeaking = false;
+      speaking = false;
+      clearTimeout(speakingTimeout);
+    };
+
+    utterance.onerror = () => {
+      isSpeaking = false;
+      speaking = false;
+    };
+
+    window.speechSynthesis.speak(utterance);
   }
 </script>
 
 <!-- [ View ] ------------------------------------------------------------------------------------>
 {#if $message.text !== ""}
+  <!-- New position: Left, above menu (Fixed) -->
+  <div class="avatar-dialog-fixed">
+    <div class="avatar-container">
+      <h3>🎙️ Messaggio di Sistema</h3>
+      <AvatarParlante {speaking} {isSpeaking} />
+    </div>
+  </div>
+
   <dialog
     id="mioDialog"
     class={$message.type === "error"
@@ -44,6 +153,7 @@
             ? "📝"
             : "💬"}
     </span>
+
     <p>{$message.text}</p>
 
     {#if $message.type === "confirmation"}
@@ -133,5 +243,55 @@
   }
   .confirmation button:hover {
     background-color: #0b7dda;
+  }
+
+  .confirmation button:hover {
+    background-color: #0b7dda;
+  }
+
+  /* Fixed Avatar Styles (Matching Annotazione.svelte) */
+  .avatar-dialog-fixed {
+    position: fixed;
+    top: 80px;
+    left: 20px;
+    z-index: 2000; /* Higher than dialog? Dialog is usually top layer. */
+    animation: slideIn 0.5s ease-out;
+  }
+
+  .avatar-container {
+    background: #222;
+    border: 3px solid #ffcc00; /* Use var(--highlight) if possible, else hardcode match */
+    padding: 20px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .avatar-container h3 {
+    color: #ffcc00;
+    margin: 0;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 1rem;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Ensure the canvas fits in the container */
+  :global(.avatar-dialog-fixed .avatar-canvas) {
+    width: 250px !important; /* Smaller size for sidebar */
+    height: 400px !important;
+    max-width: none !important;
   }
 </style>
