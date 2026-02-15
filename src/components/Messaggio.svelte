@@ -12,6 +12,7 @@
 
   let speaking = false;
   let isSpeaking = false;
+  let avatarControlsOpen = false;
   let audio: SpeechSynthesisUtterance | null = null;
   let voices: SpeechSynthesisVoice[] = [];
 
@@ -125,11 +126,15 @@
 
 <!-- [ View ] ------------------------------------------------------------------------------------>
 {#if $message.text !== ""}
-  <!-- New position: Left, above menu (Fixed) -->
-  <div class="avatar-dialog-fixed">
+  <div class="avatar-dialog">
     <div class="avatar-container">
       <h3>🎙️ Messaggio di Sistema</h3>
-      <AvatarParlante {speaking} {isSpeaking} />
+      <AvatarParlante
+        {speaking}
+        {isSpeaking}
+        bind:controlsOpen={avatarControlsOpen}
+      />
+      <button class="btn-close-avatar" on:click={closeDialog}>❌ Chiudi</button>
     </div>
   </div>
 
@@ -249,18 +254,18 @@
     background-color: #0b7dda;
   }
 
-  /* Fixed Avatar Styles (Matching Annotazione.svelte) */
-  .avatar-dialog-fixed {
+  /* Avatar Dialog (Matching Annotazione.svelte) */
+  .avatar-dialog {
     position: fixed;
     top: 80px;
     left: 20px;
-    z-index: 2000; /* Higher than dialog? Dialog is usually top layer. */
+    z-index: 2000;
     animation: slideIn 0.5s ease-out;
   }
 
   .avatar-container {
     background: #222;
-    border: 3px solid #ffcc00; /* Use var(--highlight) if possible, else hardcode match */
+    border: 3px solid #ffcc00;
     padding: 20px;
     border-radius: 15px;
     display: flex;
@@ -277,6 +282,16 @@
     font-size: 1rem;
   }
 
+  .btn-close-avatar {
+    background: #d45d5d;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
   @keyframes slideIn {
     from {
       transform: translateX(-100%);
@@ -286,12 +301,5 @@
       transform: translateX(0);
       opacity: 1;
     }
-  }
-
-  /* Ensure the canvas fits in the container */
-  :global(.avatar-dialog-fixed .avatar-canvas) {
-    width: 250px !important; /* Smaller size for sidebar */
-    height: 400px !important;
-    max-width: none !important;
   }
 </style>

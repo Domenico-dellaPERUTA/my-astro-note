@@ -417,6 +417,7 @@ console.log(hello);
     let speaking = $state(false);
     let showAvatar = $state(false);
     let isSpeaking = $state(false); // Real-time speaking indicator
+    let avatarControlsOpen = $state(false); // Control panel state from AvatarParlante
     let audio: HTMLAudioElement | null = null;
     let speechUtterance: SpeechSynthesisUtterance | null = null;
     let voices: SpeechSynthesisVoice[] = [];
@@ -436,6 +437,13 @@ console.log(hello);
         }
     });
 
+    // Effetto per chiudere l'avatar quando si chiudono i controlli (se la lettura è finita)
+    $effect(() => {
+        if (!avatarControlsOpen && !speaking && showAvatar) {
+            showAvatar = false;
+        }
+    });
+
     function stopSpeech() {
         if (audio) {
             audio.pause();
@@ -445,8 +453,16 @@ console.log(hello);
             window.speechSynthesis.cancel();
         }
         speaking = false;
-        showAvatar = false;
         isSpeaking = false;
+        // Chiudi l'avatar solo se il pannello controlli non è aperto
+        if (!avatarControlsOpen) {
+            showAvatar = false;
+        }
+    }
+
+    function forceCloseAvatar() {
+        stopSpeech();
+        showAvatar = false;
     }
 
     // Funzione per aspettare il caricamento delle voci (problema comune del browser)
@@ -539,19 +555,6 @@ console.log(hello);
             );
         }
 
-        speechUtterance.onend = () => {
-            speaking = false;
-            showAvatar = false;
-            isSpeaking = false;
-        };
-
-        speechUtterance.onerror = () => {
-            speaking = false;
-            showAvatar = false;
-            isSpeaking = false;
-        };
-
-        // Boundary events for real-time speaking detection
         let speakingTimeout: any;
         speechUtterance.onboundary = (event) => {
             if (event.name === "word") {
@@ -559,7 +562,7 @@ console.log(hello);
                 clearTimeout(speakingTimeout);
                 speakingTimeout = setTimeout(() => {
                     isSpeaking = false;
-                }, 180); // Lowered from 400ms for sharper word separation
+                }, 180);
             }
         };
 
@@ -571,9 +574,22 @@ console.log(hello);
         speechUtterance.onend = () => {
             console.log("[TTS] Lettura terminata");
             speaking = false;
-            showAvatar = false;
             isSpeaking = false;
             clearTimeout(speakingTimeout);
+            // Non chiudere l'avatar se l'utente sta smanettando con i controlli
+            if (!avatarControlsOpen) {
+                showAvatar = false;
+            }
+        };
+
+        speechUtterance.onerror = (e) => {
+            console.error("[TTS] Errore lettura:", e);
+            speaking = false;
+            isSpeaking = false;
+            clearTimeout(speakingTimeout);
+            if (!avatarControlsOpen) {
+                showAvatar = false;
+            }
         };
 
         window.speechSynthesis.speak(speechUtterance);
@@ -753,7 +769,11 @@ console.log(hello);
     <div class="avatar-dialog">
         <div class="avatar-container">
             <h3>🎙️ Segretaria Virtuale</h3>
-            <AvatarParlante {speaking} {isSpeaking} />
+            <AvatarParlante
+                {speaking}
+                {isSpeaking}
+                bind:controlsOpen={avatarControlsOpen}
+            />
             <button class="btn-close-avatar" on:click={stopSpeech}
                 >❌ Chiudi</button
             >
@@ -884,7 +904,7 @@ console.log(hello);
         position: fixed;
         top: 80px;
         left: 20px;
-        z-index: 1000;
+        z-index: 2000;
         animation: slideIn 0.5s ease-out;
     }
 
