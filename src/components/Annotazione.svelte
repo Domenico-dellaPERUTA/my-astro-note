@@ -472,7 +472,9 @@ console.log(hello);
             .replace(/`[\s\S]*?`/g, "") // Rimuove codice inline
             .replace(/!\[.*?\]\(.*?\)/g, "") // Rimuove immagini
             .replace(/:::[\s\S]*?:::/gs, "") // Rimuove blocchi speciali (quiz, slide)
-            .replace(/[#*`_~+]/g, "") // Rimuove simboli markdown (incluso + per sottolineatura)
+            .replace(/^\s*#.*$/gm, "") // Rimuove Titoli (linee che iniziano con #)
+            .replace(/^\s*\|.*\|.*$/gm, "") // Rimuove Tabelle (linee che sembrano righe di tabella markdown)
+            .replace(/[-*`_~+]/g, "") // Rimuove simboli markdown residui (incluso - per elenchi, ma lasciando il testo)
             .trim();
 
         const textToRead = `${localTitolo}. ${cleanText}`;
