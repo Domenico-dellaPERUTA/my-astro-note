@@ -7,7 +7,7 @@
     // --- Props ---
     export let speaking = false;
     export let isSpeaking = false;
-    export let controlsOpen = false; // Expose control panel state to parent
+    export let controlsOpen = false; // Espone lo stato del pannello di controllo al genitore
 
     // --- Riferimenti Three.js ---
     let canvas: HTMLCanvasElement;
@@ -39,7 +39,7 @@
     let saccadeY = 0;
 
     // --- Profile Look State ---
-    let lookTargetY = 0; // 0=front, 1.6=left, -1.6=right
+    let lookTargetY = 0; // 0=frontale, 1.6=sinistra, -1.6=destra
     let currentHeadY = 0;
     let currentChestY = 0;
     let lookTimer = 0;
@@ -47,7 +47,10 @@
 
     // --- 🛠️ PANNELLO DI CONTROLLO TOTALE ---
     let showControls = false;
-    let activeTab = "clothing"; // 'clothing', 'bones', 'camera'
+    let activeTab = "personaggio"; // 'clothing' (vestiti), 'bones' (ossa), 'camera', 'personaggio'
+    let availableModels: string[] = [];
+    let currentModelName = "avatar_secretary.glb";
+    let manualMouthIndex = 33; // Predefinito per il vampiro e modelli con morph numerici
 
     // Mesh Management
     let allMeshes: Array<{ name: string; mesh: THREE.Mesh; visible: boolean }> =
@@ -72,8 +75,6 @@
     let spotLight: THREE.SpotLight;
     let ambientLight: THREE.AmbientLight;
 
-    const modelUrl = "/models/avatar.glb";
-
     function toggleControls() {
         showControls = !showControls;
         controlsOpen = showControls;
@@ -89,19 +90,297 @@
         }
     }
 
+    async function loadConfig() {
+        try {
+            const res = await fetch("/api/config/avatar");
+            const data = await res.json();
+            if (data.currentModel) {
+                currentModelName = data.currentModel;
+            }
+            if (data.cameraY !== undefined) cameraSettings.y = data.cameraY;
+            if (data.cameraZ !== undefined) cameraSettings.z = data.cameraZ;
+            if (data.cameraTargetY !== undefined)
+                cameraSettings.targetY = data.cameraTargetY;
+        } catch (e) {
+            console.error("Failed to load avatar config:", e);
+        }
+    }
+
+    async function loadAvailableModels() {
+        try {
+            const res = await fetch("/api/models");
+            availableModels = await res.json();
+        } catch (e) {
+            console.error("Failed to load models list:", e);
+        }
+    }
+
+    async function saveModelConfig(name: string) {
+        try {
+            await fetch("/api/config/avatar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    currentModel: name,
+                    cameraY: cameraSettings.y,
+                    cameraZ: cameraSettings.z,
+                    cameraTargetY: cameraSettings.targetY,
+                }),
+            });
+        } catch (e) {
+            console.error("Failed to save avatar config:", e);
+        }
+    }
+
+    async function saveCameraConfig() {
+        try {
+            await fetch("/api/config/avatar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    currentModel: currentModelName,
+                    cameraY: cameraSettings.y,
+                    cameraZ: cameraSettings.z,
+                    cameraTargetY: cameraSettings.targetY,
+                }),
+            });
+        } catch (e) {
+            console.error("Failed to save camera config:", e);
+        }
+    }
+
+    function loadModel(name: string) {
+        if (!scene) return;
+
+        // Rimuovi modello precedente se esiste
+        if (model) {
+            scene.remove(model);
+            model.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.geometry.dispose();
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach((m) => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            });
+            model = null;
+        }
+
+        // Reset state
+        mouthMeshes = [];
+        eyeMeshes = [];
+
+        const loader = new GLTFLoader();
+        loader.load(`/models/${name}`, (gltf) => {
+            model = gltf.scene;
+            scene.add(model);
+
+            if (gltf.animations?.length > 0) {
+                mixer = new THREE.AnimationMixer(model);
+            }
+
+            const meshList: typeof allMeshes = [];
+            const boneList: typeof allBones = [];
+
+            model.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    const mName = child.name.toLowerCase();
+                    const isJacket =
+                        mName.includes("jacket") ||
+                        mName.includes("outer") ||
+                        mName.includes("giacca");
+
+                    meshList.push({
+                        name: child.name,
+                        mesh: child,
+                        visible: !isJacket,
+                    });
+                    if (isJacket) child.visible = false;
+
+                    if (child.name.includes("Face_(merged)baked")) {
+                        if (!child.morphTargetDictionary) {
+                            console.warn(
+                                `[Avatar] ⚠️ La mesh ${child.name} non ha morphTargetDictionary!`,
+                            );
+                        }
+                    }
+
+                    // Supporto per Face Landmarks & Visemi
+                    if (
+                        child.morphTargetDictionary &&
+                        child.morphTargetInfluences
+                    ) {
+                        const morphKeys = Object.keys(
+                            child.morphTargetDictionary,
+                        );
+
+                        const vowels = ["A", "I", "U", "E", "O"];
+                        let mIndices: Record<string, number> = {};
+
+                        // Pattern specifici (Visemi, Oculus, basati su vocali)
+                        vowels.forEach((v) => {
+                            const k = morphKeys.find(
+                                (key) =>
+                                    key.includes(`Fcl_MTH_${v}`) ||
+                                    key === v ||
+                                    key.toLowerCase() === v.toLowerCase() ||
+                                    key
+                                        .toLowerCase()
+                                        .endsWith(`_${v.toLowerCase()}`) ||
+                                    key
+                                        .toLowerCase()
+                                        .endsWith(
+                                            `viseme_${v.toLowerCase()}`,
+                                        ) ||
+                                    key
+                                        .toLowerCase()
+                                        .includes(`mouth_${v.toLowerCase()}`) ||
+                                    key
+                                        .toLowerCase()
+                                        .includes(`vow_${v.toLowerCase()}`),
+                            );
+                            if (k !== undefined)
+                                mIndices[v] = child.morphTargetDictionary![k];
+                        });
+
+                        // Fallback: se non vengono trovate vocali, cerca "JawOpen", "MouthOpen" o "Open"
+                        if (Object.keys(mIndices).length === 0) {
+                            // Controlla se le chiavi sono numeriche (stile modello Vampire)
+                            const isNumeric = morphKeys.every(
+                                (k) => !isNaN(Number(k)),
+                            );
+
+                            if (isNumeric) {
+                                // Indice specifico per il vampiro, fallback a manualMouthIndex per gli altri
+                                const finalizedIndex = name.includes("vampire")
+                                    ? 33
+                                    : manualMouthIndex;
+                                mIndices["A"] = finalizedIndex;
+                            } else {
+                                const fallback = morphKeys.find(
+                                    (k) =>
+                                        k.toLowerCase().includes("jawopen") ||
+                                        k.toLowerCase().includes("mouthopen") ||
+                                        k.toLowerCase().includes("open") ||
+                                        k.toLowerCase().includes("mouth") ||
+                                        k.toLowerCase().includes("jaw"),
+                                );
+                                if (fallback !== undefined) {
+                                    mIndices["A"] =
+                                        child.morphTargetDictionary![fallback];
+                                }
+                            }
+                        }
+
+                        if (Object.keys(mIndices).length > 0) {
+                            mouthMeshes.push({
+                                mesh: child,
+                                indices: mIndices,
+                            });
+                        }
+
+                        const blinkKeys = morphKeys.filter((k) =>
+                            [
+                                "EyeClose",
+                                "blink",
+                                "Blink",
+                                "Close_Eyes",
+                                "Close_Eye",
+                            ].some((p) => k.includes(p)),
+                        );
+                        blinkKeys.forEach((eyeK) => {
+                            eyeMeshes.push({
+                                mesh: child,
+                                index: child.morphTargetDictionary![eyeK],
+                            });
+                        });
+                    }
+                }
+
+                if (child instanceof THREE.Bone) {
+                    boneList.push({ name: child.name, bone: child });
+
+                    // Definiamo la posa "mani dietro la schiena" come originale/default
+                    let defX = child.rotation.x;
+                    let defY = child.rotation.y;
+                    let defZ = child.rotation.z;
+
+                    const bName = child.name.toLowerCase();
+                    if (
+                        bName.includes("upperarm") ||
+                        bName.includes("armupper")
+                    ) {
+                        if (
+                            bName.includes("left") ||
+                            bName.includes("_l") ||
+                            bName.includes(".l")
+                        ) {
+                            defY = 0.4;
+                            defZ = 1.1;
+                        } else {
+                            defY = -0.4;
+                            defZ = -1.1;
+                        }
+                    }
+                    if (bName.includes("hand")) {
+                        if (
+                            bName.includes("left") ||
+                            bName.includes("_l") ||
+                            bName.includes(".l")
+                        ) {
+                            defY = 0.5;
+                        } else {
+                            defY = -0.5;
+                        }
+                    }
+
+                    originalRotations[child.name] = {
+                        x: defX,
+                        y: defY,
+                        z: defZ,
+                    };
+                    pose[child.name] = { x: defX, y: defY, z: defZ };
+
+                    // Applichiamo subito la posa
+                    child.rotation.set(defX, defY, defZ);
+                }
+            });
+
+            allMeshes = meshList.sort((a, b) => a.name.localeCompare(b.name));
+            allBones = boneList.sort((a, b) => a.name.localeCompare(b.name));
+
+            // Scale & Center (Yesterday's perfect centering)
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 1.7 / size.y;
+            model.scale.setScalar(scale);
+            model.position.set(0, 1.4 - size.y * scale * 0.86, 1.15);
+            model.rotation.set(0, Math.PI, 0);
+        });
+    }
+
+    async function selectModel(name: string) {
+        currentModelName = name;
+        loadModel(name);
+        await saveModelConfig(name);
+    }
+
     function resetPose() {
         Object.keys(pose).forEach((boneName) => {
             const orig = originalRotations[boneName];
             if (orig) {
                 pose[boneName] = { x: orig.x, y: orig.y, z: orig.z };
-            } else {
-                pose[boneName] = { x: 0, y: 0, z: 0 };
             }
         });
     }
 
-    onMount(() => {
+    onMount(async () => {
         if (!canvas) return;
+
+        await loadConfig();
+        await loadAvailableModels();
 
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(30.0, 0.57, 0.1, 20.0);
@@ -126,341 +405,184 @@
         scene.add(spotLight);
         scene.add(spotLight.target);
 
-        const loader = new GLTFLoader();
-        loader.load(modelUrl, (gltf) => {
-            model = gltf.scene;
-            scene.add(model);
-
-            if (gltf.animations?.length > 0) {
-                mixer = new THREE.AnimationMixer(model);
-            }
-
-            const meshList: typeof allMeshes = [];
-            const boneList: typeof allBones = [];
-
-            model.traverse((child) => {
-                // SkinnedMesh is a subclass of Mesh, so this catches both
-                if (child instanceof THREE.Mesh) {
-                    console.log(
-                        "[Avatar] 📦 Mesh detected:",
-                        child.name,
-                        child.type,
-                    );
-                    const mName = child.name.toLowerCase();
-                    const isJacket =
-                        mName.includes("jacket") ||
-                        mName.includes("outer") ||
-                        mName.includes("giacca");
-
-                    meshList.push({
-                        name: child.name,
-                        mesh: child,
-                        visible: !isJacket,
-                    });
-                    if (isJacket) child.visible = false;
-
-                    if (
-                        child.morphTargetDictionary &&
-                        child.morphTargetInfluences
-                    ) {
-                        const morphKeys = Object.keys(
-                            child.morphTargetDictionary,
-                        );
-                        const vowels = ["A", "I", "U", "E", "O"];
-                        let mIndices: Record<string, number> = {};
-                        vowels.forEach((v) => {
-                            const k = morphKeys.find(
-                                (key) =>
-                                    key.includes(`Fcl_MTH_${v}`) ||
-                                    key === v ||
-                                    key.toLowerCase() === v.toLowerCase(),
-                            );
-                            if (k !== undefined)
-                                mIndices[v] = child.morphTargetDictionary![k];
-                        });
-                        if (Object.keys(mIndices).length > 0)
-                            mouthMeshes.push({
-                                mesh: child,
-                                indices: mIndices,
-                            });
-
-                        const blinkKeys = morphKeys.filter((k) =>
-                            [
-                                "EyeClose",
-                                "blink",
-                                "Blink",
-                                "Close_Eyes",
-                                "Close_Eye",
-                            ].some((p) => k.includes(p)),
-                        );
-                        blinkKeys.forEach((eyeK) => {
-                            console.log(
-                                "[Avatar] 👁️ Blink target found:",
-                                eyeK,
-                                "on mesh:",
-                                child.name,
-                            );
-                            eyeMeshes.push({
-                                mesh: child,
-                                index: child.morphTargetDictionary![eyeK],
-                            });
-                        });
-                    }
-                }
-
-                if (child instanceof THREE.Bone) {
-                    boneList.push({ name: child.name, bone: child });
-
-                    // Definiamo la posa "mani dietro la schiena" come originale/default
-                    let defX = child.rotation.x;
-                    let defY = child.rotation.y;
-                    let defZ = child.rotation.z;
-
-                    const name = child.name.toLowerCase();
-                    if (
-                        name.includes("upperarm") ||
-                        name.includes("armupper")
-                    ) {
-                        if (
-                            name.includes("left") ||
-                            name.includes("_l") ||
-                            name.includes(".l")
-                        ) {
-                            defY = 0.4;
-                            defZ = 1.1;
-                        } else {
-                            defY = -0.4;
-                            defZ = -1.1;
-                        }
-                    }
-                    if (name.includes("hand")) {
-                        if (
-                            name.includes("left") ||
-                            name.includes("_l") ||
-                            name.includes(".l")
-                        ) {
-                            defY = 0.5;
-                        } else {
-                            defY = -0.5;
-                        }
-                    }
-
-                    originalRotations[child.name] = {
-                        x: defX,
-                        y: defY,
-                        z: defZ,
-                    };
-                    pose[child.name] = { x: defX, y: defY, z: defZ };
-
-                    // Applichiamo subito la posa
-                    child.rotation.set(defX, defY, defZ);
-                }
-            });
-
-            allMeshes = meshList.sort((a, b) => a.name.localeCompare(b.name));
-            allBones = boneList.sort((a, b) => a.name.localeCompare(b.name));
-
-            // Scale & Center
-            const box = new THREE.Box3().setFromObject(model);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-            const scale = 1.7 / size.y;
-            model.scale.setScalar(scale);
-            // Centratura fissa (yesterday style)
-            model.position.set(0, 1.4 - size.y * scale * 0.86, 1.15);
-            model.rotation.set(0, Math.PI, 0);
-        });
-
-        const animate = () => {
-            animationId = requestAnimationFrame(animate);
-            const delta = clock.getDelta();
-            if (mixer) mixer.update(delta);
-            const time = Date.now() * 0.001;
-
-            // Sync Camera
-            if (camera) {
-                camera.position.y = cameraSettings.y;
-                camera.position.z = cameraSettings.z;
-                camera.lookAt(0, cameraSettings.targetY, 0);
-            }
-
-            // Sync Meshes
-            allMeshes.forEach((m) => {
-                m.mesh.visible = m.visible;
-            });
-
-            // --- 🦴 LOGICA OSSA (Idle vs Manual) ---
-            if (showControls) {
-                // MANUALE: L'utente ha il controllo totale
-                allBones.forEach((b) => {
-                    const p = pose[b.name];
-                    if (p) b.bone.rotation.set(p.x, p.y, p.z);
-                });
-            } else {
-                // NATURALE: L'avatar torna alla posa originale e si muove pigramente (Idle)
-                const noise = Math.sin(time * 0.2 + headNoiseOffset);
-                const breathe = Math.sin(time * 1.2) * 0.015;
-                const sway = Math.sin(time * 0.5) * 0.02;
-
-                // Gestione timer sguardo (Look Target) - Solo a sinistra per "leggere"
-                lookTimer += delta;
-                if (lookTimer >= nextLookTime) {
-                    if (lookTargetY !== 0) {
-                        // Se era girata a leggere, torna a guardare l'utente
-                        lookTargetY = 0;
-                        nextLookTime = 5 + Math.random() * 10; // Resta frontale più a lungo
-                    } else {
-                        // Gira la testa a sinistra per leggere i testi
-                        lookTargetY = 1.6;
-                        nextLookTime = 3 + Math.random() * 6; // Tempo di "lettura"
-                    }
-                    lookTimer = 0;
-                }
-
-                // La testa è più veloce (0.08) del corpo (0.03)
-                currentHeadY = THREE.MathUtils.lerp(
-                    currentHeadY,
-                    lookTargetY,
-                    0.08,
-                );
-                currentChestY = THREE.MathUtils.lerp(
-                    currentChestY,
-                    lookTargetY,
-                    0.03,
-                );
-
-                allBones.forEach((b) => {
-                    const orig = originalRotations[b.name];
-                    if (!orig) return;
-
-                    let targetX = orig.x;
-                    let targetY = orig.y;
-                    let targetZ = orig.z;
-
-                    // Aggiungiamo micro-movimenti naturali e coordinamento sguardo
-                    const name = b.name.toLowerCase();
-
-                    // Coordinamento dello sguardo sequenziale (Head-Lead)
-                    if (name.includes("chest") && !name.includes("upper")) {
-                        targetY += currentChestY * 0.4;
-                    }
-                    if (name.includes("upperchest")) {
-                        targetY += currentChestY * 0.2;
-                    }
-                    if (name.includes("head")) {
-                        // Formula: HeadTarget = TargetTotale - BustoAttuale
-                        targetY += currentHeadY - currentChestY * 0.6;
-
-                        // Respiro e Noise
-                        targetX += breathe + noise * 0.05;
-                        targetZ += noise * 0.03;
-                    }
-
-                    if (name.includes("neck")) {
-                        targetX += breathe;
-                    }
-
-                    if (name.includes("spine") && !name.includes("chest")) {
-                        targetX += sway;
-                    }
-
-                    // Lerp per fluidità totale
-                    b.bone.rotation.x = THREE.MathUtils.lerp(
-                        b.bone.rotation.x,
-                        targetX,
-                        0.05,
-                    );
-                    b.bone.rotation.y = THREE.MathUtils.lerp(
-                        b.bone.rotation.y,
-                        targetY,
-                        0.05,
-                    );
-                    b.bone.rotation.z = THREE.MathUtils.lerp(
-                        b.bone.rotation.z,
-                        targetZ,
-                        0.05,
-                    );
-                });
-            }
-
-            // --- Lip Sync ---
-            if (isSpeaking && mouthMeshes.length > 0) {
-                const vol =
-                    (Math.sin(time * 25) * 0.3 + 0.7) *
-                    (Math.sin(time * 8) * 0.4 + 0.6);
-                mouthMeshes.forEach(({ mesh, indices }) => {
-                    Object.values(indices).forEach(
-                        (idx) =>
-                            (mesh.morphTargetInfluences![idx] =
-                                Math.random() * vol * 0.5),
-                    );
-                });
-                if (spotLight) spotLight.intensity = 1.0 + vol * 2.5;
-            } else {
-                mouthMeshes.forEach(({ mesh, indices }) => {
-                    Object.values(indices).forEach(
-                        (idx) =>
-                            (mesh.morphTargetInfluences![idx] =
-                                THREE.MathUtils.lerp(
-                                    mesh.morphTargetInfluences![idx],
-                                    0,
-                                    0.1,
-                                )),
-                    );
-                });
-                if (spotLight)
-                    spotLight.intensity = THREE.MathUtils.lerp(
-                        spotLight.intensity,
-                        0.4,
-                        0.1,
-                    );
-            }
-
-            // --- Eyes & Natural Movement ---
-            eyeSaccadeTimer += delta;
-            if (eyeSaccadeTimer >= nextSaccadeTime) {
-                saccadeX = (Math.random() - 0.5) * 0.15;
-                saccadeY = (Math.random() - 0.5) * 0.1;
-                eyeSaccadeTimer = 0;
-                nextSaccadeTime = 0.5 + Math.random() * 2.0;
-            }
-
-            // Blinking (Randomized)
-            blinkTimer += delta;
-            if (blinkTimer >= nextBlinkTime) {
-                const p = (blinkTimer - nextBlinkTime) / 0.18; // Durata blink
-                blinkValue = p <= 1.0 ? Math.sin(p * Math.PI) : 0;
-                if (p > 1.0) {
-                    blinkTimer = 0;
-                    nextBlinkTime = 2 + Math.random() * 5;
-                }
-            }
-            eyeMeshes.forEach(
-                ({ mesh, index }) =>
-                    (mesh.morphTargetInfluences![index] = blinkValue),
-            );
-
-            // Saccadi oculari (solo se non in manual override o se vogliamo tenerle comunque)
-            allBones.forEach((b) => {
-                const name = b.name.toLowerCase();
-                if (name.includes("eye") && !name.includes("eyebrow")) {
-                    b.bone.rotation.x = THREE.MathUtils.lerp(
-                        b.bone.rotation.x,
-                        saccadeY,
-                        0.1,
-                    );
-                    b.bone.rotation.y = THREE.MathUtils.lerp(
-                        b.bone.rotation.y,
-                        saccadeX,
-                        0.1,
-                    );
-                }
-            });
-
-            renderer.render(scene, camera);
-        };
+        loadModel(currentModelName);
         animate();
     });
+
+    const animate = () => {
+        animationId = requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        if (mixer) mixer.update(delta);
+        const time = Date.now() * 0.001;
+
+        // Sincronizzazione Camera
+        if (camera) {
+            camera.position.y = cameraSettings.y;
+            camera.position.z = cameraSettings.z;
+            camera.lookAt(0, cameraSettings.targetY, 0);
+        }
+
+        // Sincronizzazione Mesh
+        allMeshes.forEach((m) => {
+            m.mesh.visible = m.visible;
+        });
+
+        // --- 🦴 LOGICA OSSA (Idle vs Manual) ---
+        if (showControls) {
+            // MANUALE: L'utente ha il controllo totale
+            allBones.forEach((b) => {
+                const p = pose[b.name];
+                if (p) b.bone.rotation.set(p.x, p.y, p.z);
+            });
+        } else {
+            // NATURALE: L'avatar torna alla posa originale e si muove pigramente (Idle)
+            const noise = Math.sin(time * 0.2 + headNoiseOffset);
+            const breathe = Math.sin(time * 1.2) * 0.015;
+            const sway = Math.sin(time * 0.5) * 0.02;
+
+            // Gestione timer sguardo (Look Target) - Solo a sinistra per "leggere"
+            lookTimer += delta;
+            if (lookTimer >= nextLookTime) {
+                if (lookTargetY !== 0) {
+                    lookTargetY = 0;
+                    nextLookTime = 5 + Math.random() * 10;
+                } else {
+                    lookTargetY = 1.6;
+                    nextLookTime = 3 + Math.random() * 6;
+                }
+                lookTimer = 0;
+            }
+
+            currentHeadY = THREE.MathUtils.lerp(
+                currentHeadY,
+                lookTargetY,
+                0.08,
+            );
+            currentChestY = THREE.MathUtils.lerp(
+                currentChestY,
+                lookTargetY,
+                0.03,
+            );
+
+            allBones.forEach((b) => {
+                const orig = originalRotations[b.name];
+                if (!orig) return;
+
+                let targetX = orig.x;
+                let targetY = orig.y;
+                let targetZ = orig.z;
+
+                const name = b.name.toLowerCase();
+                if (name.includes("chest") && !name.includes("upper")) {
+                    targetY += currentChestY * 0.4;
+                }
+                if (name.includes("upperchest")) {
+                    targetY += currentChestY * 0.2;
+                }
+                if (name.includes("head")) {
+                    targetY += currentHeadY - currentChestY * 0.6;
+                    targetX += breathe + noise * 0.05;
+                    targetZ += noise * 0.03;
+                }
+                if (name.includes("neck")) {
+                    targetX += breathe;
+                }
+                if (name.includes("spine") && !name.includes("chest")) {
+                    targetX += sway;
+                }
+
+                b.bone.rotation.x = THREE.MathUtils.lerp(
+                    b.bone.rotation.x,
+                    targetX,
+                    0.05,
+                );
+                b.bone.rotation.y = THREE.MathUtils.lerp(
+                    b.bone.rotation.y,
+                    targetY,
+                    0.05,
+                );
+                b.bone.rotation.z = THREE.MathUtils.lerp(
+                    b.bone.rotation.z,
+                    targetZ,
+                    0.05,
+                );
+            });
+        }
+
+        // --- Sincronizzazione Labiale ---
+        if (isSpeaking && mouthMeshes.length > 0) {
+            const vol =
+                (Math.sin(time * 25) * 0.3 + 0.7) *
+                (Math.sin(time * 8) * 0.4 + 0.6);
+            mouthMeshes.forEach(({ mesh, indices }) => {
+                Object.values(indices).forEach(
+                    (idx) =>
+                        (mesh.morphTargetInfluences![idx] =
+                            Math.random() * vol * 0.5),
+                );
+            });
+            if (spotLight) spotLight.intensity = 1.0 + vol * 2.5;
+        } else {
+            mouthMeshes.forEach(({ mesh, indices }) => {
+                Object.values(indices).forEach(
+                    (idx) =>
+                        (mesh.morphTargetInfluences![idx] =
+                            THREE.MathUtils.lerp(
+                                mesh.morphTargetInfluences![idx],
+                                0,
+                                0.1,
+                            )),
+                );
+            });
+            if (spotLight)
+                spotLight.intensity = THREE.MathUtils.lerp(
+                    spotLight.intensity,
+                    0.4,
+                    0.1,
+                );
+        }
+
+        // --- Occhi e Movimenti Naturali ---
+        eyeSaccadeTimer += delta;
+        if (eyeSaccadeTimer >= nextSaccadeTime) {
+            saccadeX = (Math.random() - 0.5) * 0.15;
+            saccadeY = (Math.random() - 0.5) * 0.1;
+            eyeSaccadeTimer = 0;
+            nextSaccadeTime = 0.5 + Math.random() * 2.0;
+        }
+
+        blinkTimer += delta;
+        if (blinkTimer >= nextBlinkTime) {
+            const p = (blinkTimer - nextBlinkTime) / 0.18;
+            blinkValue = p <= 1.0 ? Math.sin(p * Math.PI) : 0;
+            if (p > 1.0) {
+                blinkTimer = 0;
+                nextBlinkTime = 2 + Math.random() * 5;
+            }
+        }
+        eyeMeshes.forEach(
+            ({ mesh, index }) =>
+                (mesh.morphTargetInfluences![index] = blinkValue),
+        );
+
+        allBones.forEach((b) => {
+            const name = b.name.toLowerCase();
+            if (name.includes("eye") && !name.includes("eyebrow")) {
+                b.bone.rotation.x = THREE.MathUtils.lerp(
+                    b.bone.rotation.x,
+                    saccadeY,
+                    0.1,
+                );
+                b.bone.rotation.y = THREE.MathUtils.lerp(
+                    b.bone.rotation.y,
+                    saccadeX,
+                    0.1,
+                );
+            }
+        });
+
+        renderer.render(scene, camera);
+    };
 
     onDestroy(() => {
         if (animationId) cancelAnimationFrame(animationId);
@@ -492,6 +614,11 @@
         >
             <div class="tabs">
                 <button
+                    class:active={activeTab === "personaggio"}
+                    on:click={() => (activeTab = "personaggio")}
+                    >🎭 Personaggio</button
+                >
+                <button
                     class:active={activeTab === "clothing"}
                     on:click={() => (activeTab = "clothing")}
                     >👗 Clothing</button
@@ -507,7 +634,29 @@
             </div>
 
             <div class="tab-content">
-                {#if activeTab === "clothing"}
+                {#if activeTab === "personaggio"}
+                    <div class="models-list">
+                        <h4>Scegli Modello</h4>
+                        <div class="grid">
+                            {#each availableModels as m}
+                                <button
+                                    class="model-item"
+                                    class:active={currentModelName === m}
+                                    on:click={() => selectModel(m)}
+                                >
+                                    <span
+                                        >{m
+                                            .replace(".glb", "")
+                                            .replace("avatar_", "")}</span
+                                    >
+                                    {#if currentModelName === m}
+                                        <span class="badge">Attivo</span>
+                                    {/if}
+                                </button>
+                            {/each}
+                        </div>
+                    </div>
+                {:else if activeTab === "clothing"}
                     <div class="clothing-list">
                         <h4>All Model Meshes ({allMeshes.length})</h4>
                         <div class="grid">
@@ -563,7 +712,12 @@
                     </div>
                 {:else if activeTab === "camera"}
                     <div class="camera-settings">
-                        <h4>Camera View</h4>
+                        <div class="header">
+                            <h4>Camera View</h4>
+                            <button class="save-btn" on:click={saveCameraConfig}
+                                >💾 Salva View</button
+                            >
+                        </div>
                         <div class="row">
                             <label>Zoom (Z)</label>
                             <input
@@ -761,5 +915,52 @@
         text-align: right;
         color: #4a90e2;
         font-family: monospace;
+    }
+
+    .model-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 12px 15px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        cursor: pointer;
+        transition: 0.2s;
+        text-transform: capitalize;
+    }
+
+    .model-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: #4a90e2;
+    }
+
+    .model-item.active {
+        background: rgba(74, 144, 226, 0.2);
+        border-color: #4a90e2;
+    }
+
+    .badge {
+        font-size: 10px;
+        background: #4a90e2;
+        padding: 2px 8px;
+        border-radius: 10px;
+        text-transform: uppercase;
+    }
+
+    .save-btn {
+        padding: 5px 12px;
+        border-radius: 5px;
+        background: #4a90e2;
+        color: white;
+        border: none;
+        font-size: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .save-btn:hover {
+        background: #357abd;
     }
 </style>

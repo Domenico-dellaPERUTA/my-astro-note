@@ -18,6 +18,10 @@ export const collections = {
             themeVariables: z.record(z.string(), z.any()).optional(),
             flowchart: z.record(z.string(), z.any()).optional(),
             themeCSS: z.string().optional(),
+            currentModel: z.string().optional(),
+            cameraY: z.number().optional(),
+            cameraZ: z.number().optional(),
+            cameraTargetY: z.number().optional(),
         }),
     }),
 };
