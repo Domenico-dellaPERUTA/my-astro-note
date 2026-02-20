@@ -174,7 +174,10 @@ const id = Astro.url.searchParams.get("id");
             5px 5px 0px rgba(0, 0, 0, 0.05);
         margin: 20px;
         max-width: 1200px;
+        width: calc(100% - 40px); /* Assicura che si allarghi */
         min-height: 80vh;
+        height: auto; /* Cresce col contenuto */
+        flex-shrink: 0; /* Non si restringe mai per stare nel viewport */
     }
     .header-view {
         display: flex;

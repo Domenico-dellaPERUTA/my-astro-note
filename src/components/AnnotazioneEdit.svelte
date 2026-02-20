@@ -241,7 +241,10 @@ console.log(hello);
             5px 5px 0px rgba(0, 0, 0, 0.05);
         margin: 20px;
         max-width: 1200px;
+        width: calc(100% - 40px);
         min-height: 80vh;
+        height: auto;
+        flex-shrink: 0;
     }
     .header-edit {
         display: flex;
