@@ -53,30 +53,26 @@
     let nextLookTime = 5 + Math.random() * 5;
 
     // --- 🛠️ PANNELLO DI CONTROLLO TOTALE ---
-    let showControls = false;
-    let activeTab = "personaggio"; // 'clothing' (vestiti), 'bones' (ossa), 'camera', 'personaggio'
-    let availableModels: string[] = [];
-    let currentModelName = "avatar_secretary.glb";
-    let manualMouthIndex = 33; // Predefinito per il vampiro e modelli con morph numerici
+    let showControls = $state(false);
+    let activeTab = $state("personaggio"); // 'clothing' (vestiti), 'bones' (ossa), 'camera', 'personaggio'
+    let availableModels = $state([]);
+    let currentModelName = $state("avatar_secretary.glb");
+    let manualMouthIndex = $state(33); // Predefinito per il vampiro e modelli con morph numerici
 
     // Mesh Management
-    let allMeshes: Array<{ name: string; mesh: THREE.Mesh; visible: boolean }> =
-        [];
+    let allMeshes = $state([]);
 
     // Bone Management
-    let allBones: Array<{ name: string; bone: THREE.Bone }> = [];
-    let pose: Record<
-        string,
-        { x: number; y: number; z: number; [key: string]: number }
-    > = {};
+    let allBones = $state([]);
+    let pose = $state({});
     let originalRotations: Record<string, { x: number; y: number; z: number }> =
         {};
 
-    let cameraSettings = {
+    let cameraSettings = $state({
         y: 1.3,
         z: 2.1,
         targetY: 1.55,
-    };
+    });
 
     // --- Luci ---
     let spotLight: THREE.SpotLight;
