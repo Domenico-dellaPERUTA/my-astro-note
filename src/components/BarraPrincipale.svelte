@@ -15,15 +15,22 @@
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
 
-  let { titolo = "Home", userRole } = $props<{
+  let {
+    titolo = "Home",
+    userRole,
+    editMode = false,
+  } = $props<{
     titolo?: string;
     userRole?: UserRole;
+    editMode?: boolean;
   }>();
 
   onMount(() => {
     if (userRole) {
       userRoleStore.set(userRole);
     }
+    // Sincronizza lo store con la modalità decisa dal server
+    isEdit.set(editMode);
   });
 
   async function handleUserClick() {
@@ -50,7 +57,7 @@
 <!-- [ View ] ------------------------------------------------------------------------------------>
 <nav class="barra-principale">
   <div class="header-left">
-    <h1>{$isEdit === true ? "✏️" : "📎"} {titolo}</h1>
+    <h1>{editMode === true ? "✏️" : "📎"} {titolo}</h1>
   </div>
 
   {#if $quizActiveState.isActive}

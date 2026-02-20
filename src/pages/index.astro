@@ -1,24 +1,58 @@
 ---
 import BarraPrincipale from "../components/BarraPrincipale.svelte";
 import MenuLaterale from "../components/MenuLaterale.svelte";
-import Annotazione from "../components/Annotazione.svelte";
+import NoteLayout from "../layouts/NoteLayout.astro";
+import AnnotazioneEdit from "../components/AnnotazioneEdit.svelte";
 import Layout from "../layouts/Layout.astro";
 import { notesDb } from "../db/mysql";
 import Messaggio from "../components/Messaggio.svelte";
 import { isAdmin } from "../lib/auth";
+import { getEntry } from "astro:content";
 
-// Carica le note dal database lato server
+// Carica le note dal database lato server per il menu laterale
 const notesData = await notesDb.getAll();
 const userIsAdmin = isAdmin(Astro.cookies);
 const role = userIsAdmin ? "admin" : "guest";
 
-// Gestione deep linking
-const urlId = Astro.url.searchParams.get("id");
+// Gestione selezione nota tramite URL
+const id = Astro.url.searchParams.get("id");
+const isEditing = Astro.url.searchParams.get("edit") === "true";
+
+// Ripristino stato se si torna dalla gestione file
+const referer = Astro.request.headers.get("referer");
+if (!id && referer && referer.includes("/admin/files")) {
+  const lastUrl = Astro.cookies.get("last_note_url")?.value;
+  if (lastUrl) {
+    return Astro.redirect(decodeURIComponent(lastUrl));
+  }
+}
+
+let selectedNote = null;
+if (id) {
+  const entry = await getEntry("notes", id);
+  if (entry) {
+    selectedNote = {
+      id: parseInt(id),
+      ...entry.data,
+    };
+  } else {
+    // Fallback: fetch directly from DB if Content Collection is not yet synced
+    const dbNote = await notesDb.getById(parseInt(id));
+    if (dbNote) {
+      selectedNote = dbNote;
+    }
+  }
+}
 ---
 
 <Layout>
   <section>
-    <BarraPrincipale titolo="Appunti" userRole={role} client:load />
+    <BarraPrincipale
+      titolo={selectedNote ? selectedNote.title : "Appunti"}
+      userRole={role}
+      editMode={isEditing}
+      client:load
+    />
   </section>
 
   <div class="main-container">
@@ -26,14 +60,44 @@ const urlId = Astro.url.searchParams.get("id");
       <MenuLaterale
         titolo="Lista Note"
         initialNotes={notesData}
-        initialId={urlId}
+        initialId={id}
         client:load
       />
     </aside>
 
     <main class="content-area">
       <Messaggio client:load />
-      <Annotazione client:load />
+      {
+        selectedNote ? (
+          isEditing && userIsAdmin ? (
+            <AnnotazioneEdit note={selectedNote} client:load />
+          ) : (
+            <NoteLayout
+              title={selectedNote.title}
+              content={selectedNote.content}
+              type={(selectedNote.type as any) || "note"}
+              userRole={role}
+            />
+          )
+        ) : (
+          <div class="empty-state">
+            <div class="empty-state-card">
+              <span class="pin">📍 </span>
+              <span class="empty-icon">📓</span>
+              <h1>Benvenuto nel tuo Archivio</h1>
+              <p>
+                Seleziona una nota dal menu laterale per iniziare a leggere o
+                modificare i tuoi appunti.
+              </p>
+              <div class="empty-decoration">
+                <div class="line" />
+                <div class="line" />
+                <div class="line" />
+              </div>
+            </div>
+          </div>
+        )
+      }
     </main>
   </div>
 </Layout>
@@ -59,5 +123,96 @@ const urlId = Astro.url.searchParams.get("id");
     /* Subtle texture overlay for main content */
     background-image: radial-gradient(#d0c9b6 2px, transparent 2px);
     background-size: 30px 30px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Empty State Styling */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+  }
+  .empty-state-card {
+    background: #fffcf0;
+    padding: 60px;
+    border-radius: 4px;
+    box-shadow:
+      1px 1px 3px rgba(0, 0, 0, 0.1),
+      10px 10px 0px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    max-width: 500px;
+    border: 1px solid #e0d0a0;
+    position: relative;
+    animation: cardAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pin {
+    position: absolute;
+    top: -1rem;
+    left: 0.5rem;
+    font-size: 3rem;
+    overflow: visible;
+    z-index: 10;
+  }
+  .empty-icon {
+    font-size: 5rem;
+    display: block;
+    margin-bottom: 20px;
+    filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.1));
+    animation: iconFloat 3s ease-in-out infinite;
+  }
+  .empty-state-card h1 {
+    font-family: var(--font-main);
+    color: var(--text-ink);
+    font-size: 2rem;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .empty-state-card p {
+    font-family: var(--font-main);
+    color: #666;
+    line-height: 1.6;
+    font-size: 1.1rem;
+  }
+  .empty-decoration {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+  .empty-decoration .line {
+    height: 2px;
+    background: #e0d0a0;
+    width: 60%;
+  }
+  .empty-decoration .line:nth-child(2) {
+    width: 40%;
+  }
+  .empty-decoration .line:nth-child(3) {
+    width: 20%;
+  }
+
+  @keyframes cardAppear {
+    from {
+      opacity: 0;
+      transform: translateY(30px) rotate(-1deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(0);
+    }
+  }
+  @keyframes iconFloat {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
   }
 </style>

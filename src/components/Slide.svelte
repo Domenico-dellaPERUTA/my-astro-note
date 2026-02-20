@@ -9,117 +9,18 @@
         }[];
     }>();
 
-    let currentSlide = 0;
-    let speaking = $state(false);
-    let voices: SpeechSynthesisVoice[] = [];
-    let speechUtterance: SpeechSynthesisUtterance | null = null;
-
-    $effect(() => {
-        // Pre-caricamento voci
-        const loadVoices = () => {
-            const availableVoices = window.speechSynthesis.getVoices();
-            if (availableVoices.length > 0) {
-                voices = availableVoices;
-            }
-        };
-        loadVoices();
-        if (
-            typeof window !== "undefined" &&
-            window.speechSynthesis.onvoiceschanged !== undefined
-        ) {
-            window.speechSynthesis.onvoiceschanged = loadVoices;
-        }
-    });
+    let currentSlide = $state(0);
 
     function nextSlide() {
         currentSlide = (currentSlide + 1) % slides.length;
-        if (speaking) stopSpeech();
     }
 
     function prevSlide() {
         currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-        if (speaking) stopSpeech();
     }
 
     function goToSlide(index: number) {
         currentSlide = index;
-        if (speaking) stopSpeech();
-    }
-
-    function stopSpeech() {
-        if (window.speechSynthesis.speaking) {
-            window.speechSynthesis.cancel();
-        }
-        speaking = false;
-    }
-
-    function toggleSpeech() {
-        if (speaking) {
-            stopSpeech();
-            return;
-        }
-
-        const slide = slides[currentSlide];
-        let textToRead = `Slide ${currentSlide + 1}. `;
-
-        if (slide.type === "code") {
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = slide.content;
-            textToRead += tempDiv.textContent || "";
-        } else if (slide.type === "image") {
-            textToRead += "Immagine.";
-        }
-
-        speaking = true;
-        window.speechSynthesis.cancel();
-
-        // Sintesi Nativa Browser (macOS)
-        let utterance = new SpeechSynthesisUtterance(textToRead);
-        utterance.lang = "it-IT";
-        speechUtterance = utterance;
-
-        if (voices.length === 0) voices = window.speechSynthesis.getVoices();
-
-        const preferredVoice =
-            (voices as SpeechSynthesisVoice[]).find(
-                (v: SpeechSynthesisVoice) =>
-                    v.lang.startsWith("it") && v.name.includes("Emma"),
-            ) ||
-            (voices as SpeechSynthesisVoice[]).find(
-                (v: SpeechSynthesisVoice) =>
-                    v.lang.startsWith("it") && v.name.includes("Federica"),
-            ) ||
-            (voices as SpeechSynthesisVoice[]).find(
-                (v: SpeechSynthesisVoice) =>
-                    v.lang.startsWith("it") &&
-                    (v.name.includes("Alice") || v.name.includes("Elsa")),
-            ) ||
-            (voices as SpeechSynthesisVoice[]).find(
-                (v: SpeechSynthesisVoice) =>
-                    v.lang.startsWith("it") &&
-                    (v.name.includes("Luca") || v.name.includes("Cosimo")),
-            ) ||
-            (voices as SpeechSynthesisVoice[]).find(
-                (v: SpeechSynthesisVoice) =>
-                    v.lang.startsWith("it") && !v.name.includes("Google"),
-            );
-
-        if (preferredVoice) {
-            console.log("[TTS Slide] Voce selezionata:", preferredVoice.name);
-            speechUtterance.voice = preferredVoice;
-            speechUtterance.lang = preferredVoice.lang;
-        }
-
-        speechUtterance.onend = () => {
-            speaking = false;
-        };
-
-        speechUtterance.onerror = () => {
-            speaking = false;
-        };
-
-        window.speechSynthesis.speak(utterance);
-        speechUtterance = utterance;
     }
 </script>
 
@@ -172,13 +73,6 @@
         </div>
 
         <div class="slide-counter">
-            <button
-                class="btn-speech-mini"
-                onclick={toggleSpeech}
-                title={speaking ? "Ferma lettura" : "Ascolta slide"}
-            >
-                {speaking ? "⏹️" : "🔊"}
-            </button>
             <span>{currentSlide + 1} / {slides.length}</span>
         </div>
     {/if}

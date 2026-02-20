@@ -57,15 +57,17 @@
 
       const sessionLastId = getSession("lastSelectedNoteId");
 
+      // Helper per impostare cookie (per comunicare con Astro server)
+      const setCookie = (name: string, value: string) => {
+        document.cookie = `${name}=${value}; path=/; max-age=3600; SameSite=Lax`;
+      };
+
       if (clientUrlId) {
         // Priorità 0: URL Client (vince su tutto perché è quello che l'utente vede)
         idToRestore = clientUrlId;
       } else if (initialId) {
         // Priorità 1: URL Server (se passato)
         idToRestore = initialId;
-      } else {
-        // Priorità 2: Sessione
-        idToRestore = sessionLastId;
       }
 
       if (idToRestore && initialNotes.length > 0) {
@@ -74,12 +76,22 @@
         );
         if (idx !== -1) {
           selectedNoteIndex.set(idx);
+        } else {
+          selectedNoteIndex.set(-1);
         }
+      } else {
+        selectedNoteIndex.set(-1);
       }
 
+      const clientIsEdit = urlParams.get("edit") === "true";
       const savedIsEdit = getSession("lastIsEdit");
-      if (savedIsEdit === "true") {
+
+      if (clientIsEdit) {
         isEdit.set(true);
+      } else if (savedIsEdit === "true") {
+        isEdit.set(true);
+      } else {
+        isEdit.set(false);
       }
 
       // 3. Dopo il ripristino, abilita il salvataggio automatico
@@ -89,7 +101,7 @@
     }
   });
 
-  // Reactive statements per il salvataggio automatico in sessionStorage e aggiornamento URL
+  // Reactive statement per il salvataggio automatico in sessionStorage
   $effect(() => {
     if (restored && $notes.length > 0) {
       const note = $notes[$selectedNoteIndex];
@@ -98,17 +110,6 @@
         try {
           sessionStorage.setItem("lastSelectedNoteId", noteId);
         } catch (e) {}
-
-        // Aggiorna URL senza ricaricare la pagina
-        if (typeof window !== "undefined") {
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set("id", noteId);
-          window.history.pushState({}, "", newUrl.toString());
-        }
-      } else {
-        try {
-          sessionStorage.removeItem("lastSelectedNoteId");
-        } catch (e) {}
       }
     }
   });
@@ -116,7 +117,15 @@
   $effect(() => {
     if (restored && typeof window !== "undefined") {
       try {
-        sessionStorage.setItem("lastIsEdit", $isEdit.toString());
+        const editVal = $isEdit.toString();
+        sessionStorage.setItem("lastIsEdit", editVal);
+
+        // Sincronizza cookie per il server
+        const note = $notes[$selectedNoteIndex];
+        if (note) {
+          const url = `/?id=${note.id}${editVal === "true" ? "&edit=true" : ""}`;
+          document.cookie = `last_note_url=${encodeURIComponent(url)}; path=/; max-age=3600; SameSite=Lax`;
+        }
       } catch (e) {}
     }
   });
@@ -148,15 +157,11 @@
   }
 
   async function seleziona(nota: Nota) {
-    const indice = $notes.findIndex((n) => n.id === nota.id);
-    selectedNoteIndex.set(indice);
-    isEdit.set(false);
+    window.location.href = `/?id=${nota.id}`;
   }
 
   async function edita(nota: Nota) {
-    const indice = $notes.findIndex((n) => n.id === nota.id);
-    selectedNoteIndex.set(indice);
-    isEdit.set(true);
+    window.location.href = `/?id=${nota.id}&edit=true`;
   }
 
   async function cancella(nota: Nota) {
@@ -170,11 +175,8 @@
           const { error } = await actions.deleteNote({ id: nota.id });
           if (error) throw new Error("Errore nell'eliminazione");
 
-          await loadNotesFromDb();
-
-          if ($selectedNoteIndex === indice) {
-            selectedNoteIndex.set(-1);
-          }
+          // Redirect to home
+          window.location.href = "/";
         } catch (error) {
           console.error(error);
           message.set({ text: "Errore durante l'eliminazione", type: "error" });
@@ -201,13 +203,8 @@
 
       if (error || !data) throw new Error("Errore nella creazione");
 
-      notes.update((currentNotes) => {
-        const updatedNotes = [...currentNotes, data as Nota];
-        const newIndex = updatedNotes.findIndex((n) => n.id === data.id);
-        selectedNoteIndex.set(newIndex);
-        return updatedNotes;
-      });
-      isEdit.set(true);
+      // Redirect to new note in edit mode
+      window.location.href = `/?id=${data.id}&edit=true`;
     } catch (error) {
       const errorMessage = "Errore nella creazione della nota";
       message.set({ text: errorMessage, type: "error" });
