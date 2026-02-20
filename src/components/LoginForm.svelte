@@ -48,7 +48,7 @@
     }
 </script>
 
-<form on:submit|preventDefault={handleSubmit}>
+<form onsubmit={handleSubmit}>
     <div class="form-group">
         <label for="username">Utente:</label>
         <input
@@ -74,10 +74,7 @@
     <div class="form-group">
         <label for="token">Token (OTP):</label>
         <!-- OtpInput component updates the local token variable -->
-        <OtpInput
-            on:input={(e) => (token = e.detail)}
-            on:complete={handleSubmit}
-        />
+        <OtpInput onInput={(val) => (token = val)} onComplete={handleSubmit} />
     </div>
 
     {#if message}
@@ -88,8 +85,7 @@
         <!--
         <button class="login-btn" type="submit">Accedi</button>
         -->
-        <a href="/" class="back-btn" on:click={resettaUser}>← Torna alle Note</a
-        >
+        <a href="/" class="back-btn" onclick={resettaUser}>← Torna alle Note</a>
     </div>
 </form>
 
