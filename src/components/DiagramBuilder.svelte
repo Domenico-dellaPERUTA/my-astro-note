@@ -1,36 +1,40 @@
 <script lang="ts">
     import { userRole } from "../stores/notesStore";
 
-    export let content: string;
-    export let onUpdate: (newContent: string) => void;
+    let { content, onUpdate } = $props<{
+        content: string;
+        onUpdate: (newContent: string) => void;
+    }>();
 
     // Config
     // Config (Deducible from content)
-    $: diagramType = (content
-        .match(/\/\/ @type:\s*(activity|class|usecase)/i)?.[1]
-        ?.toLowerCase() || "activity") as "activity" | "class" | "usecase";
+    let diagramType = $derived(
+        (content
+            .match(/\/\/ @type:\s*(activity|class|usecase)/i)?.[1]
+            ?.toLowerCase() || "activity") as "activity" | "class" | "usecase",
+    );
 
     // Node State
-    let newNodeId = "";
-    let newNodeLabel = "";
-    let nodeType = "state"; // Default per activity
+    let newNodeId = $state("");
+    let newNodeLabel = $state("");
+    let nodeType = $state("state"); // Default per activity
 
     // Class specific
-    let classFields = "";
-    let classMethods = "";
+    let classFields = $state("");
+    let classMethods = $state("");
 
     // Link State
-    let node1Id = "";
-    let node2Id = "";
-    let linkLabel = "";
-    let linkTailLabel = ""; // Cardinality A (Source)
-    let linkHeadLabel = ""; // Cardinality B (Target)
-    let linkType = "association";
-    let isBidirectional = false;
+    let node1Id = $state("");
+    let node2Id = $state("");
+    let linkLabel = $state("");
+    let linkTailLabel = $state(""); // Cardinality A (Source)
+    let linkHeadLabel = $state(""); // Cardinality B (Target)
+    let linkType = $state("association");
+    let isBidirectional = $state(false);
 
     // Subgraph State
-    let groupLabel = "Gruppo";
-    let groupNodeIds = [""]; // Dynamic list of IDs
+    let groupLabel = $state("Gruppo");
+    let groupNodeIds = $state([""]); // Dynamic list of IDs
 
     function sanitizeId(val: string) {
         return val.replace(/[^a-zA-Z0-9]/g, "");
@@ -125,8 +129,8 @@
     }
 
     // Port selection for links
-    let node1Port = "";
-    let node2Port = "";
+    let node1Port = $state("");
+    let node2Port = $state("");
 
     const ports = [
         { label: "Auto", value: "" },
@@ -272,7 +276,7 @@
     }
 
     // Quando cambia diagramType, resetto nodeType e linkType
-    $: {
+    $effect(() => {
         if (diagramType === "activity") {
             nodeType = "state";
             linkType = "association";
@@ -283,7 +287,7 @@
             nodeType = "actor";
             linkType = "association";
         }
-    }
+    });
 
     function toggleOrientation(dir: "TB" | "BT" | "LR" | "RL") {
         let newContent = content;
@@ -305,75 +309,80 @@
     }
 
     // Estraggo l'orientamento corrente per il selettore
-    $: currentRankdir = (content
-        .match(/rankdir\s*=\s*(TB|BT|LR|RL)/i)?.[1]
-        ?.toUpperCase() || "TB") as "TB" | "BT" | "LR" | "RL";
+    let currentRankdir = $derived(
+        (content.match(/rankdir\s*=\s*(TB|BT|LR|RL)/i)?.[1]?.toUpperCase() ||
+            "TB") as "TB" | "BT" | "LR" | "RL",
+    );
 
     // Estraggo tutti gli ID dei nodi esistenti per le combobox
-    $: existingNodeIds = (() => {
-        const ids = new Set<string>();
+    let existingNodeIds = $derived(
+        (() => {
+            const ids = new Set<string>();
 
-        // 1. Pulizia del contenuto per l'estrazione degli ID
-        let cleanContent = content
-            .replace(/\/\/.*$/gm, "") // Rimuove commenti a riga singola
-            .replace(/\/\*[\s\S]*?\*\//g, "") // Rimuove commenti multi-riga
-            .replace(/"[^"]*"/g, "") // Rimuove stringhe tra virgolette
-            .replace(/\[[^\]]*\]/g, ""); // Rimuove blocchi di attributi [...]
+            // 1. Pulizia del contenuto per l'estrazione degli ID
+            let cleanContent = content
+                .replace(/\/\/.*$/gm, "") // Rimuove commenti a riga singola
+                .replace(/\/\*[\s\S]*?\*\//g, "") // Rimuove commenti multi-riga
+                .replace(/"[^"]*"/g, "") // Rimuove stringhe tra virgolette
+                .replace(/\[[^\]]*\]/g, ""); // Rimuove blocchi di attributi [...]
 
-        // 2. Parole chiave DOT da escludere
-        const dotKeywords = [
-            "digraph",
-            "graph",
-            "subgraph",
-            "rankdir",
-            "node",
-            "edge",
-            "label",
-            "shape",
-            "style",
-            "fillcolor",
-            "width",
-            "height",
-            "fixedsize",
-            "xlabel",
-            "labelloc",
-            "imagescale",
-            "tailport",
-            "headport",
-            "arrowhead",
-            "arrowtail",
-            "dir",
-            "circle",
-            "doublecircle",
-            "box",
-            "diamond",
-            "ellipse",
-            "none",
-            "solid",
-            "dashed",
-            "rounded",
-            "filled",
-            "black",
-            "white",
-            "TB",
-            "BT",
-            "LR",
-            "RL",
-            "strict",
-        ];
+            // 2. Parole chiave DOT da escludere
+            const dotKeywords = [
+                "digraph",
+                "graph",
+                "subgraph",
+                "rankdir",
+                "node",
+                "edge",
+                "label",
+                "shape",
+                "style",
+                "fillcolor",
+                "width",
+                "height",
+                "fixedsize",
+                "xlabel",
+                "labelloc",
+                "imagescale",
+                "tailport",
+                "headport",
+                "arrowhead",
+                "arrowtail",
+                "dir",
+                "circle",
+                "doublecircle",
+                "box",
+                "diamond",
+                "ellipse",
+                "none",
+                "solid",
+                "dashed",
+                "rounded",
+                "filled",
+                "black",
+                "white",
+                "TB",
+                "BT",
+                "LR",
+                "RL",
+                "strict",
+            ];
 
-        // 3. Cerchiamo identificatori (ID)
-        // Gli ID in DOT possono essere alfanumerici (non inizianti con cifra) o stringhe (già rimosse)
-        const matches = cleanContent.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gm);
-        for (const match of matches) {
-            const id = match[1];
-            if (id && !dotKeywords.includes(id)) {
-                ids.add(id);
+            // 3. Cerchiamo identificatori (ID)
+            // Gli ID in DOT possono essere alfanumerici (non inizianti con cifra) o stringhe (già rimosse)
+            const matches = cleanContent.matchAll(
+                /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gm,
+            );
+            for (const match of matches) {
+                const id = match[1];
+                if (id && !dotKeywords.includes(id)) {
+                    ids.add(id);
+                }
             }
-        }
 
-        return Array.from(ids).sort();
-    })();
+            return Array.from(ids).sort();
+        })(),
+    );
 </script>
 
 {#if $userRole === "admin"}

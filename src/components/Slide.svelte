@@ -1,25 +1,32 @@
 <script lang="ts">
     import { onMount } from "svelte";
 
-    export let slides: {
-        type: "image" | "code";
-        content: string;
-        lang?: string;
-    }[] = [];
+    let { slides = [] } = $props<{
+        slides: {
+            type: "image" | "code";
+            content: string;
+            lang?: string;
+        }[];
+    }>();
 
     let currentSlide = 0;
-    let speaking = false;
-    let audio: HTMLAudioElement | null = null;
-    let speechUtterance: SpeechSynthesisUtterance | null = null;
+    let speaking = $state(false);
     let voices: SpeechSynthesisVoice[] = [];
+    let speechUtterance: SpeechSynthesisUtterance | null = null;
 
-    onMount(() => {
+    $effect(() => {
         // Pre-caricamento voci
         const loadVoices = () => {
-            voices = window.speechSynthesis.getVoices();
+            const availableVoices = window.speechSynthesis.getVoices();
+            if (availableVoices.length > 0) {
+                voices = availableVoices;
+            }
         };
         loadVoices();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        if (
+            typeof window !== "undefined" &&
+            window.speechSynthesis.onvoiceschanged !== undefined
+        ) {
             window.speechSynthesis.onvoiceschanged = loadVoices;
         }
     });
@@ -40,10 +47,6 @@
     }
 
     function stopSpeech() {
-        if (audio) {
-            audio.pause();
-            audio = null;
-        }
         if (window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
         }
@@ -71,8 +74,9 @@
         window.speechSynthesis.cancel();
 
         // Sintesi Nativa Browser (macOS)
-        speechUtterance = new SpeechSynthesisUtterance(textToRead);
-        speechUtterance.lang = "it-IT";
+        let utterance = new SpeechSynthesisUtterance(textToRead);
+        utterance.lang = "it-IT";
+        speechUtterance = utterance;
 
         if (voices.length === 0) voices = window.speechSynthesis.getVoices();
 
@@ -114,7 +118,8 @@
             speaking = false;
         };
 
-        window.speechSynthesis.speak(speechUtterance);
+        window.speechSynthesis.speak(utterance);
+        speechUtterance = utterance;
     }
 </script>
 
@@ -138,7 +143,7 @@
         <div class="slide-controls">
             <button
                 class="nav-btn prev"
-                on:click={prevSlide}
+                onclick={prevSlide}
                 title="Slide precedente"
             >
                 ◀
@@ -149,7 +154,7 @@
                     <button
                         class="indicator"
                         class:active={index === currentSlide}
-                        on:click={() => goToSlide(index)}
+                        onclick={() => goToSlide(index)}
                         title="Vai a slide {index + 1}"
                     >
                         {index + 1}
@@ -159,7 +164,7 @@
 
             <button
                 class="nav-btn next"
-                on:click={nextSlide}
+                onclick={nextSlide}
                 title="Slide successiva"
             >
                 ▶
@@ -169,7 +174,7 @@
         <div class="slide-counter">
             <button
                 class="btn-speech-mini"
-                on:click={toggleSpeech}
+                onclick={toggleSpeech}
                 title={speaking ? "Ferma lettura" : "Ascolta slide"}
             >
                 {speaking ? "⏹️" : "🔊"}

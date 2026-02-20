@@ -15,8 +15,10 @@
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
 
-  export let titolo = "Home";
-  export let userRole: UserRole | undefined = undefined;
+  let { titolo = "Home", userRole } = $props<{
+    titolo?: string;
+    userRole?: UserRole;
+  }>();
 
   onMount(() => {
     if (userRole) {
@@ -75,7 +77,7 @@
       class="user-btn"
       class:guest={$userRoleStore === "guest"}
       class:admin={$userRoleStore === "admin"}
-      on:click={handleUserClick}
+      onclick={handleUserClick}
       title={$userRoleStore === "admin" ? "Logout Amministratore" : "Accedi"}
     >
       👤

@@ -6,9 +6,15 @@
     import { userRole } from "../stores/notesStore";
 
     // --- Props ---
-    export let speaking = false;
-    export let isSpeaking = false;
-    export let controlsOpen = false; // Espone lo stato del pannello di controllo al genitore
+    let {
+        speaking = false,
+        isSpeaking = false,
+        controlsOpen = $bindable(false),
+    } = $props<{
+        speaking?: boolean;
+        isSpeaking?: boolean;
+        controlsOpen?: boolean;
+    }>();
 
     // --- Riferimenti Three.js ---
     let canvas: HTMLCanvasElement;

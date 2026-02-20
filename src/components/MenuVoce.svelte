@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
     import { slide } from "svelte/transition";
     import {
         userRole,
@@ -12,18 +11,47 @@
     } from "../stores/notesStore";
     import { actions } from "astro:actions";
 
-    export let nota: Nota;
-    export let indiceSelezionato: number;
-    export let livello = 0;
+    let {
+        nota,
+        indiceSelezionato,
+        livello = 0,
+        onSelect,
+        onEdit,
+        onDelete,
+        onAddChild,
+    } = $props<{
+        nota: Nota;
+        indiceSelezionato: number;
+        livello?: number;
+        onSelect?: (nota: Nota) => void;
+        onEdit?: (nota: Nota) => void;
+        onDelete?: (nota: Nota) => void;
+        onAddChild?: (nota: Nota) => void;
+    }>();
 
-    const dispatch = createEventDispatcher();
-    let expanded = false;
+    let expanded = $state(false);
+
+    function seleziona() {
+        onSelect?.(nota);
+    }
+
+    function edita() {
+        onEdit?.(nota);
+    }
+
+    function cancella() {
+        onDelete?.(nota);
+    }
+
+    function aggiungiFiglio() {
+        onAddChild?.(nota);
+    }
 
     function toggleExpand() {
         expanded = !expanded;
     }
 
-    let showMenu = false;
+    let showMenu = $state(false);
 
     function toggleMenu() {
         showMenu = !showMenu;
@@ -162,32 +190,39 @@
     }
 
     // Calcoliamo se il bottone Incolla è abilitato per questa voce
-
-    // Calcoliamo se il bottone Incolla è abilitato per questa voce
-    $: canPaste =
+    let canPaste = $derived(
         $clipboardNote &&
-        $clipboardNote.id !== nota.id &&
-        !isDescendant($clipboardNote, nota.id);
+            $clipboardNote.id !== nota.id &&
+            !isDescendant($clipboardNote, nota.id),
+    );
 
     // Espandi automaticamente se un discendente è selezionato
-    $: if (
-        indiceSelezionato !== undefined &&
-        isDescendant(nota, indiceSelezionato)
-    ) {
-        expanded = true;
-    }
+    $effect(() => {
+        if (
+            indiceSelezionato !== undefined &&
+            isDescendant(nota, indiceSelezionato)
+        ) {
+            expanded = true;
+        }
+    });
 
     // Calculate indentation based on level
-    $: indentStyle = `padding-left: ${livello * 15 + 10}px`;
+    let indentStyle = $derived(`padding-left: ${livello * 15 + 10}px`);
 </script>
 
-<svelte:window on:click={handleGlobalClick} />
+<svelte:window onclick={handleGlobalClick} />
 
 <li class="menu-voce-container">
     <div class="menu-voce">
         <!-- Icona per espandere/collassare -->
         {#if nota.children && nota.children.length > 0}
-            <button class="toggle-btn" on:click|stopPropagation={toggleExpand}>
+            <button
+                class="toggle-btn"
+                onclick={(e) => {
+                    e.stopPropagation();
+                    toggleExpand();
+                }}
+            >
                 {expanded ? "▼" : "▶"}
             </button>
         {:else}
@@ -198,7 +233,7 @@
             type="button"
             class="title-btn {indiceSelezionato === nota.id ? 'selected' : ''}"
             style={indentStyle}
-            on:click={() => dispatch("select", nota)}
+            onclick={seleziona}
         >
             {#if nota.type === "quiz"}
                 <span class="type-icon">❓</span>
@@ -213,7 +248,10 @@
                 <button
                     type="button"
                     class="menu-trigger {showMenu ? 'active' : ''}"
-                    on:click|stopPropagation={toggleMenu}
+                    onclick={(e) => {
+                        e.stopPropagation();
+                        toggleMenu();
+                    }}
                     title="Menu azioni"
                 >
                     🛠️
@@ -223,7 +261,10 @@
                     <!-- Backdrop invisibile per chiudere cliccando fuori -->
                     <div
                         class="menu-backdrop"
-                        on:click|stopPropagation={closeMenu}
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            closeMenu();
+                        }}
                         role="presentation"
                     ></div>
 
@@ -234,8 +275,9 @@
                         <button
                             type="button"
                             class="menu-item"
-                            on:click|stopPropagation={() => {
-                                dispatch("add-child", nota);
+                            onclick={(e) => {
+                                e.stopPropagation();
+                                aggiungiFiglio();
                                 closeMenu();
                             }}
                         >
@@ -246,7 +288,8 @@
                             <button
                                 type="button"
                                 class="menu-item"
-                                on:click|stopPropagation={() => {
+                                onclick={(e) => {
+                                    e.stopPropagation();
                                     tagliaNota(nota);
                                     closeMenu();
                                 }}
@@ -259,7 +302,8 @@
                             <button
                                 type="button"
                                 class="menu-item"
-                                on:click|stopPropagation={() => {
+                                onclick={(e) => {
+                                    e.stopPropagation();
                                     incollaNota(nota);
                                     closeMenu();
                                 }}
@@ -275,7 +319,8 @@
                         <button
                             type="button"
                             class="menu-item"
-                            on:click|stopPropagation={() => {
+                            onclick={(e) => {
+                                e.stopPropagation();
                                 reorder("up");
                                 closeMenu();
                             }}
@@ -286,7 +331,8 @@
                         <button
                             type="button"
                             class="menu-item"
-                            on:click|stopPropagation={() => {
+                            onclick={(e) => {
+                                e.stopPropagation();
                                 reorder("down");
                                 closeMenu();
                             }}
@@ -301,7 +347,8 @@
                         <button
                             type="button"
                             class="menu-item"
-                            on:click|stopPropagation={() => {
+                            onclick={(e) => {
+                                e.stopPropagation();
                                 copiaLink(nota);
                                 closeMenu();
                             }}
@@ -312,12 +359,13 @@
                         <button
                             type="button"
                             class="menu-item"
-                            on:click|stopPropagation={() => {
+                            onclick={(e) => {
+                                e.stopPropagation();
                                 if ($isEdit && indiceSelezionato === nota.id) {
                                     isEdit.set(false);
                                 } else {
-                                    dispatch("select", nota);
-                                    dispatch("edit", nota);
+                                    seleziona();
+                                    edita();
                                 }
                                 closeMenu();
                             }}
@@ -335,8 +383,9 @@
                         <button
                             type="button"
                             class="menu-item delete"
-                            on:click|stopPropagation={() => {
-                                dispatch("delete", nota);
+                            onclick={(e) => {
+                                e.stopPropagation();
+                                cancella();
                                 closeMenu();
                             }}
                         >
@@ -356,10 +405,10 @@
                     nota={child}
                     {indiceSelezionato}
                     livello={livello + 1}
-                    on:select
-                    on:edit
-                    on:delete
-                    on:add-child
+                    {onSelect}
+                    {onEdit}
+                    {onDelete}
+                    {onAddChild}
                 />
             {/each}
         </ul>

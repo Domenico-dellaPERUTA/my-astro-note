@@ -19,12 +19,18 @@
   import { actions } from "astro:actions";
   import MenuVoce from "./MenuVoce.svelte";
 
-  export let titolo = "Lista Note";
-  export let initialNotes: Nota[] = [];
-  export let initialId: string | null = null;
+  let {
+    titolo = "Lista Note",
+    initialNotes = [],
+    initialId = null,
+  } = $props<{
+    titolo?: string;
+    initialNotes?: Nota[];
+    initialId?: string | null;
+  }>();
 
   // Flag per indicare che lo stato è stato ripristinato e il salvataggio può iniziare
-  let restored = false;
+  let restored = $state(false);
 
   onMount(() => {
     try {
@@ -64,7 +70,7 @@
 
       if (idToRestore && initialNotes.length > 0) {
         const idx = initialNotes.findIndex(
-          (n) => n.id.toString() === idToRestore,
+          (n: Nota) => n.id.toString() === idToRestore,
         );
         if (idx !== -1) {
           selectedNoteIndex.set(idx);
@@ -84,35 +90,39 @@
   });
 
   // Reactive statements per il salvataggio automatico in sessionStorage e aggiornamento URL
-  $: if (restored && $notes.length > 0) {
-    const note = $notes[$selectedNoteIndex];
-    if (note) {
-      const noteId = note.id.toString();
-      try {
-        sessionStorage.setItem("lastSelectedNoteId", noteId);
-      } catch (e) {}
+  $effect(() => {
+    if (restored && $notes.length > 0) {
+      const note = $notes[$selectedNoteIndex];
+      if (note) {
+        const noteId = note.id.toString();
+        try {
+          sessionStorage.setItem("lastSelectedNoteId", noteId);
+        } catch (e) {}
 
-      // Aggiorna URL senza ricaricare la pagina
-      if (typeof window !== "undefined") {
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set("id", noteId);
-        window.history.pushState({}, "", newUrl.toString());
+        // Aggiorna URL senza ricaricare la pagina
+        if (typeof window !== "undefined") {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set("id", noteId);
+          window.history.pushState({}, "", newUrl.toString());
+        }
+      } else {
+        try {
+          sessionStorage.removeItem("lastSelectedNoteId");
+        } catch (e) {}
       }
-    } else {
+    }
+  });
+
+  $effect(() => {
+    if (restored && typeof window !== "undefined") {
       try {
-        sessionStorage.removeItem("lastSelectedNoteId");
+        sessionStorage.setItem("lastIsEdit", $isEdit.toString());
       } catch (e) {}
     }
-  }
-
-  $: if (restored && typeof window !== "undefined") {
-    try {
-      sessionStorage.setItem("lastIsEdit", $isEdit.toString());
-    } catch (e) {}
-  }
+  });
 
   // Converte la lista delle note in una struttura ad albero
-  $: listaAlbero = creaAlberoNote($notes);
+  let listaAlbero = $derived(creaAlberoNote($notes));
 
   // Costruisce l'albero delle note
   function creaAlberoNote(lista: Nota[]): Nota[] {
@@ -137,19 +147,19 @@
     return nodoPrincipale;
   }
 
-  async function seleziona(evento: CustomEvent<Nota>) {
-    const nota = evento.detail;
+  async function seleziona(nota: Nota) {
     const indice = $notes.findIndex((n) => n.id === nota.id);
     selectedNoteIndex.set(indice);
     isEdit.set(false);
   }
 
-  async function edita() {
+  async function edita(nota: Nota) {
+    const indice = $notes.findIndex((n) => n.id === nota.id);
+    selectedNoteIndex.set(indice);
     isEdit.set(true);
   }
 
-  async function cancella(evento: CustomEvent<Nota>) {
-    const nota = evento.detail;
+  async function cancella(nota: Nota) {
     const indice = $notes.findIndex((n) => n.id === nota.id);
 
     message.set({
@@ -173,9 +183,9 @@
     });
   }
 
-  async function aggiungiFiglio(evento: CustomEvent<Nota>) {
-    const parent = evento.detail;
-    await aggiungiVoce(parent.id);
+  async function aggiungiFiglio(nota: Nota) {
+    const parentId = nota.id;
+    await aggiungiVoce(parentId);
   }
 
   async function aggiungiVoce(parentId?: number) {
@@ -237,14 +247,14 @@
       <div style="display: inline-flex;">
         {#if $clipboardNote}
           <button
-            on:click={() => incollaRadice()}
+            onclick={() => incollaRadice()}
             title="Incolla come radice"
             style="background:#4a90e2; margin-right:5px;"
           >
             📋
           </button>
         {/if}
-        <button on:click={() => aggiungiVoce()} title="Nuova nota radice">
+        <button onclick={() => aggiungiVoce()} title="Nuova nota radice">
           ➕
         </button>
       </div>
@@ -256,10 +266,10 @@
       <MenuVoce
         nota={rootNote}
         indiceSelezionato={$notes[$selectedNoteIndex]?.id}
-        on:select={seleziona}
-        on:edit={edita}
-        on:delete={cancella}
-        on:add-child={aggiungiFiglio}
+        onSelect={seleziona}
+        onEdit={edita}
+        onDelete={cancella}
+        onAddChild={aggiungiFiglio}
       />
     {/each}
   </ul>

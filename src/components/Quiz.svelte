@@ -2,18 +2,18 @@
     import { onMount, onDestroy } from "svelte";
     import { quizActiveState } from "../stores/quizStore";
 
-    export let quiz: any = {};
+    let { quiz = {} } = $props<{ quiz: any }>();
 
-    let title = quiz?.title || "Quiz";
-    let questions = quiz?.questions || [];
-    let timeLimit = quiz?.time || null;
+    let title = $derived(quiz?.title || "Quiz");
+    let questions = $derived(quiz?.questions || []);
+    let timeLimit = $derived(quiz?.time || null);
 
-    let secondsLeft = 0;
-    let timerStarted = false;
+    let secondsLeft = $state(0);
+    let timerStarted = $state(false);
     let timerInterval: any;
-    let quizFinished = false;
-    let selections: Record<number, number> = {};
-    let showResults = false;
+    let quizFinished = $state(false);
+    let selections = $state<Record<number, number>>({});
+    let showResults = $state(false);
 
     onMount(() => {
         if (timeLimit) {
@@ -76,18 +76,20 @@
         });
     });
 
-    $: scoring = quiz?.scoring || { ok: 1, error: 0, null: 0 };
+    let scoring = $derived(quiz?.scoring || { ok: 1, error: 0, null: 0 });
 
-    $: score = questions.reduce((acc: number, q: any, i: number) => {
-        const selection = selections[i];
-        if (selection === undefined) return acc + scoring.null;
-        if (q.options[selection]?.correct) return acc + scoring.ok;
-        return acc + scoring.error;
-    }, 0);
+    let score = $derived(
+        questions.reduce((acc: number, q: any, i: number) => {
+            const selection = selections[i];
+            if (selection === undefined) return acc + scoring.null;
+            if (q.options[selection]?.correct) return acc + scoring.ok;
+            return acc + scoring.error;
+        }, 0),
+    );
 
     // Format score for display (removes trailing zeros if integer)
-    $: displayScore = Number(score.toFixed(2));
-    $: maxScore = questions.length * scoring.ok;
+    let displayScore = $derived(Number(score.toFixed(2)));
+    let maxScore = $derived(questions.length * scoring.ok);
 
     function formatTime(s: number) {
         const m = Math.floor(s / 60);

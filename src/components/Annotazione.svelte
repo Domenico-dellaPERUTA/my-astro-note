@@ -25,8 +25,11 @@
 
     let isConfigModalOpen = $state(false);
 
-    function handleDiagramConfig(e: CustomEvent) {
-        const { diagramType, orientation } = e.detail;
+    function handleDiagramConfig(detail: {
+        diagramType: "activity" | "class" | "usecase";
+        orientation: "TB" | "LR";
+    }) {
+        const { diagramType, orientation } = detail;
 
         if (diagramType === "class") {
             localTesto = `digraph G {
@@ -335,7 +338,7 @@ console.log(hello);
 
                         mount(Slide, {
                             target: ph,
-                            props: { slides: processedSlides },
+                            props: { slides: processedSlides as any[] },
                         });
                         ph.setAttribute("data-mounted", "true");
                         ph.style.minHeight = "0";
@@ -400,8 +403,8 @@ console.log(hello);
             }
 
             // Aggiorna lo store locale
-            notes.update((notes) => {
-                const updatedNotes = [...notes];
+            notes.update((currentNotes) => {
+                const updatedNotes = [...currentNotes];
                 updatedNotes[$selectedNoteIndex] = {
                     ...updatedNotes[$selectedNoteIndex],
                     title: params.title,
@@ -416,50 +419,61 @@ console.log(hello);
             console.error(errorMessage + ":", error);
         }
     }
+    // Stati reattivi per la UI
     let speaking = $state(false);
     let showAvatar = $state(false);
-    let isSpeaking = $state(false); // Real-time speaking indicator
-    let avatarControlsOpen = $state(false); // Control panel state from AvatarParlante
-    let audio: HTMLAudioElement | null = null;
-    let speechUtterance: SpeechSynthesisUtterance | null = null;
-    let voices: SpeechSynthesisVoice[] = [];
+    let isSpeaking = $state(false);
+    let avatarControlsOpen = $state(false);
 
-    onMount(() => {
-        // Pre-caricamento voci per evitare intoppi al primo click
+    // Oggetti NATIVI: NON usare $state per evitare proxy che rompono le API del browser
+    let voices: SpeechSynthesisVoice[] = [];
+    let speechUtterance: SpeechSynthesisUtterance | null = null;
+
+    $effect(() => {
         const loadVoices = () => {
-            voices = window.speechSynthesis.getVoices();
-            if (voices.length > 0) {
-                console.log("[TTS] Voci caricate all'avvio:", voices.length);
+            const availableVoices = window.speechSynthesis.getVoices();
+            if (availableVoices.length > 0) {
+                voices = availableVoices;
+                console.log("[TTS] Voci caricate:", voices.length);
+            } else {
+                console.log(
+                    "[TTS] Nessuna voce disponibile al caricamento iniziale.",
+                );
             }
         };
 
         loadVoices();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        if (typeof window !== "undefined") {
             window.speechSynthesis.onvoiceschanged = loadVoices;
+            console.log("[TTS] Event listener per onvoiceschanged registrato.");
+        } else {
+            console.log(
+                "[TTS] window non definito, impossibile registrare onvoiceschanged.",
+            );
         }
     });
 
-    // Effetto per chiudere l'avatar quando si chiudono i controlli (se la lettura è finita)
+    // Effetto per chiudere l'avatar
     $effect(() => {
         if (!avatarControlsOpen && !speaking && showAvatar) {
+            console.log(
+                "[TTS] Chiusura automatica avatar: controlli chiusi, non sta parlando.",
+            );
             showAvatar = false;
+        } else if (showAvatar) {
+            console.log(
+                `[TTS] Avatar visibile. speaking: ${speaking}, avatarControlsOpen: ${avatarControlsOpen}`,
+            );
         }
     });
 
     function stopSpeech() {
-        if (audio) {
-            audio.pause();
-            audio = null;
-        }
         if (window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
         }
         speaking = false;
         isSpeaking = false;
-        // Chiudi l'avatar solo se il pannello controlli non è aperto
-        if (!avatarControlsOpen) {
-            showAvatar = false;
-        }
+        showAvatar = false;
     }
 
     function forceCloseAvatar() {
@@ -469,7 +483,6 @@ console.log(hello);
 
     // Funzione per aspettare il caricamento delle voci (problema comune del browser)
     function getVoicesAsync() {
-        // Già gestito in onMount
         return voices;
     }
 
@@ -504,34 +517,34 @@ console.log(hello);
         window.speechSynthesis.cancel();
 
         // Sintesi Nativa del Browser (macOS)
-        speechUtterance = new SpeechSynthesisUtterance(textToRead);
-        speechUtterance.lang = "it-IT";
+        let utterance = new SpeechSynthesisUtterance(textToRead);
+        utterance.lang = "it-IT";
+        speechUtterance = utterance;
 
         // Ottimizzazione per macOS: cerchiamo una voce di qualità
-        if (voices.length === 0) {
-            voices = window.speechSynthesis.getVoices();
-        }
+        const currentVoices = window.speechSynthesis.getVoices();
+        const voicesToUse = currentVoices.length > 0 ? currentVoices : voices;
 
         const preferredVoice =
-            (voices as SpeechSynthesisVoice[]).find(
+            voicesToUse.find(
                 (v: SpeechSynthesisVoice) =>
                     v.lang.startsWith("it") && v.name.includes("Emma"),
             ) ||
-            (voices as SpeechSynthesisVoice[]).find(
+            voicesToUse.find(
                 (v: SpeechSynthesisVoice) =>
                     v.lang.startsWith("it") && v.name.includes("Federica"),
             ) ||
-            (voices as SpeechSynthesisVoice[]).find(
+            voicesToUse.find(
                 (v: SpeechSynthesisVoice) =>
                     v.lang.startsWith("it") &&
                     (v.name.includes("Alice") || v.name.includes("Elsa")),
             ) ||
-            (voices as SpeechSynthesisVoice[]).find(
+            voicesToUse.find(
                 (v: SpeechSynthesisVoice) =>
                     v.lang.startsWith("it") &&
                     (v.name.includes("Luca") || v.name.includes("Cosimo")),
             ) ||
-            (voices as SpeechSynthesisVoice[]).find(
+            voicesToUse.find(
                 (v: SpeechSynthesisVoice) =>
                     v.lang.startsWith("it") && !v.name.includes("Google"),
             );
@@ -594,7 +607,26 @@ console.log(hello);
             }
         };
 
+        console.log("[TTS] Parametri finali utterance:", {
+            text: speechUtterance.text.substring(0, 50) + "...",
+            lang: speechUtterance.lang,
+            voice: speechUtterance.voice?.name,
+            volume: speechUtterance.volume,
+            rate: speechUtterance.rate,
+            pitch: speechUtterance.pitch,
+        });
+
+        console.log("[TTS] Chiamata a window.speechSynthesis.speak()...");
         window.speechSynthesis.speak(speechUtterance);
+
+        // Polling di controllo (alcuni browser macOS perdono eventi)
+        const checkSpeaking = setInterval(() => {
+            if (window.speechSynthesis.speaking) {
+                console.log("[TTS] Polling: Il sistema sta parlando.");
+                clearInterval(checkSpeaking);
+            }
+        }, 500);
+        setTimeout(() => clearInterval(checkSpeaking), 5000);
     }
 </script>
 
@@ -602,12 +634,14 @@ console.log(hello);
 {#if $isEdit}
     <form
         class="annotazione"
-        on:submit|preventDefault={() =>
+        onsubmit={(e) => {
+            e.preventDefault();
             saveNote({
                 title: localTitolo,
                 content: localTesto,
                 type: localTipo,
-            })}
+            });
+        }}
     >
         <div class="header-edit">
             <div class="field">
@@ -616,11 +650,7 @@ console.log(hello);
             </div>
             <div class="field type-selector">
                 <label for="tipo">Tipo:</label>
-                <select
-                    id="tipo"
-                    value={localTipo}
-                    on:change={handleTypeChange}
-                >
+                <select id="tipo" value={localTipo} onchange={handleTypeChange}>
                     <option value="note">📝 Nota</option>
                     <option value="quiz">❓ Quiz</option>
                     <option value="slide">🎞️ Slide</option>
@@ -658,7 +688,7 @@ console.log(hello);
                         <button
                             class="btn-reconfig"
                             type="button"
-                            on:click={() => (isConfigModalOpen = true)}
+                            onclick={() => (isConfigModalOpen = true)}
                             >⚙️ Configura</button
                         >
                     </div>
@@ -681,7 +711,7 @@ console.log(hello);
                     <button
                         class="toggle-mode"
                         type="button"
-                        on:click={() => (visualMode = !visualMode)}
+                        onclick={() => (visualMode = !visualMode)}
                     >
                         {visualMode
                             ? "📝 Modifica Testo"
@@ -753,7 +783,7 @@ console.log(hello);
             <h2>{localTitolo}</h2>
             <button
                 class="btn-speech"
-                on:click={toggleSpeech}
+                onclick={toggleSpeech}
                 title={speaking ? "Ferma lettura" : "Ascolta nota"}
             >
                 {speaking ? "⏹️" : "🔊"}
@@ -776,7 +806,7 @@ console.log(hello);
                 {isSpeaking}
                 bind:controlsOpen={avatarControlsOpen}
             />
-            <button class="btn-close-avatar" on:click={stopSpeech}
+            <button class="btn-close-avatar" onclick={stopSpeech}
                 >❌ Chiudi</button
             >
         </div>
@@ -784,9 +814,9 @@ console.log(hello);
 {/if}
 
 <ConfigDiagramma
-    isOpen={isConfigModalOpen}
-    on:confirm={handleDiagramConfig}
-    on:close={() => (isConfigModalOpen = false)}
+    bind:isOpen={isConfigModalOpen}
+    onConfirm={handleDiagramConfig}
+    onClose={() => (isConfigModalOpen = false)}
 />
 
 <!-- [ Style ] ---------------------------------------------------------------------------------->

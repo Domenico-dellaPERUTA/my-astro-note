@@ -1,15 +1,23 @@
-<script>
-    import { createEventDispatcher, onMount } from "svelte";
+<script lang="ts">
+    import { onMount } from "svelte";
 
-    export let length = 6;
-    export let value = "";
+    let {
+        length = 6,
+        value = $bindable(""),
+        onInput,
+        onComplete,
+    } = $props<{
+        length?: number;
+        value?: string;
+        onInput?: (val: string) => void;
+        onComplete?: (val: string) => void;
+    }>();
 
-    const dispatch = createEventDispatcher();
-    let inputs = [];
-    let values = Array(length).fill("");
+    let inputs: HTMLInputElement[] = [];
+    let values = $state(Array(length).fill(""));
 
-    function handleInput(index, event) {
-        const input = event.target;
+    function handleInput(index: number, event: Event) {
+        const input = event.target as HTMLInputElement;
         const val = input.value;
 
         if (!/^\d*$/.test(val)) {
@@ -34,7 +42,7 @@
         updateValue();
     }
 
-    function handleKeyDown(index, event) {
+    function handleKeyDown(index: number, event: KeyboardEvent) {
         if (event.key === "Backspace") {
             if (!values[index] && index > 0) {
                 inputs[index - 1].focus();
@@ -48,11 +56,12 @@
         }
     }
 
-    function handlePaste(event) {
+    function handlePaste(event: ClipboardEvent) {
         event.preventDefault();
+        if (!event.clipboardData) return;
         const pastedData = event.clipboardData.getData("text").slice(0, length);
         if (/^\d+$/.test(pastedData)) {
-            pastedData.split("").forEach((char, i) => {
+            pastedData.split("").forEach((char: string, i: number) => {
                 values[i] = char;
                 if (inputs[i]) inputs[i].value = char;
             });
@@ -65,9 +74,9 @@
 
     function updateValue() {
         value = values.join("");
-        dispatch("input", value);
+        onInput?.(value);
         if (value.length === length) {
-            dispatch("complete", value);
+            onComplete?.(value);
         }
     }
 
@@ -84,9 +93,9 @@
             inputmode="numeric"
             maxlength="1"
             class="otp-input"
-            on:input={(e) => handleInput(i, e)}
-            on:keydown={(e) => handleKeyDown(i, e)}
-            on:paste={i === 0 ? handlePaste : null}
+            oninput={(e) => handleInput(i, e)}
+            onkeydown={(e) => handleKeyDown(i, e)}
+            onpaste={i === 0 ? handlePaste : null}
             placeholder="•"
         />
     {/each}

@@ -1,26 +1,35 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
+    let {
+        isOpen = $bindable(false),
+        onConfirm,
+        onClose,
+    } = $props<{
+        isOpen: boolean;
+        onConfirm?: (detail: {
+            diagramType: "activity" | "class" | "usecase";
+            orientation: "TB" | "LR";
+        }) => void;
+        onClose?: () => void;
+    }>();
 
-    export let isOpen = false;
-
-    const dispatch = createEventDispatcher();
-
-    let diagramType: "activity" | "class" | "usecase" = "activity";
-    let orientation: "TB" | "LR" = "TB";
+    let diagramType = $state<"activity" | "class" | "usecase">("activity");
+    let orientation = $state<"TB" | "LR">("TB");
 
     // Forza orientamento orizzontale per i casi d'uso
-    $: if (diagramType === "usecase") {
-        orientation = "LR";
-    }
+    $effect(() => {
+        if (diagramType === "usecase") {
+            orientation = "LR";
+        }
+    });
 
     function confirm() {
-        dispatch("confirm", { diagramType, orientation });
+        onConfirm?.({ diagramType, orientation });
         isOpen = false;
     }
 
     function close() {
         isOpen = false;
-        dispatch("close");
+        onClose?.();
     }
 </script>
 
@@ -62,8 +71,8 @@
             </div>
 
             <div class="actions">
-                <button class="btn-cancel" on:click={close}>Annulla</button>
-                <button class="btn-confirm" on:click={confirm}
+                <button class="btn-cancel" onclick={close}>Annulla</button>
+                <button class="btn-confirm" onclick={confirm}
                     >Inizia a Disegnare 🎨</button
                 >
             </div>

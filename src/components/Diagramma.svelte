@@ -3,10 +3,10 @@
     import { graphviz } from "d3-graphviz";
     import * as d3 from "d3";
 
-    export let content: string;
+    let { content } = $props<{ content: string }>();
 
-    let graphvizContainer: HTMLElement;
-    let error: string | null = null;
+    let graphvizContainer = $state<HTMLElement>();
+    let error = $state<string | null>(null);
 
     async function renderChart() {
         if (!graphvizContainer || !content) return;
@@ -31,10 +31,12 @@
         }
     }
 
-    $: if (content) {
-        // Debouncing can be added if needed
-        renderChart();
-    }
+    $effect(() => {
+        if (content) {
+            // Debouncing can be added if needed
+            renderChart();
+        }
+    });
 
     onMount(() => {
         renderChart();

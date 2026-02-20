@@ -10,10 +10,9 @@
   import AvatarParlante from "./AvatarParlante.svelte";
   import { onMount, onDestroy } from "svelte";
 
-  let speaking = false;
-  let isSpeaking = false;
-  let avatarControlsOpen = false;
-  let audio: SpeechSynthesisUtterance | null = null;
+  let speaking = $state(false);
+  let isSpeaking = $state(false);
+  let avatarControlsOpen = $state(false);
   let voices: SpeechSynthesisVoice[] = [];
 
   // Carica le voci
@@ -22,7 +21,7 @@
     voices = window.speechSynthesis.getVoices();
   }
 
-  onMount(() => {
+  $effect(() => {
     loadVoices();
     if (
       typeof window !== "undefined" &&
@@ -66,9 +65,11 @@
   }
 
   // Monitora i messaggi per avviare la lettura
-  $: if ($message.text) {
-    speakMessage($message.text);
-  }
+  $effect(() => {
+    if ($message.text) {
+      speakMessage($message.text);
+    }
+  });
 
   function speakMessage(text: string) {
     if (!text || typeof window === "undefined") return;
@@ -134,7 +135,7 @@
         {isSpeaking}
         bind:controlsOpen={avatarControlsOpen}
       />
-      <button class="btn-close-avatar" on:click={closeDialog}>❌ Chiudi</button>
+      <button class="btn-close-avatar" onclick={closeDialog}>❌ Chiudi</button>
     </div>
   </div>
 
@@ -162,10 +163,10 @@
     <p>{$message.text}</p>
 
     {#if $message.type === "confirmation"}
-      <button on:click={confirmDialog}>Conferma</button>
+      <button onclick={confirmDialog}>Conferma</button>
     {/if}
 
-    <button on:click={closeDialog}>Chiudi</button>
+    <button onclick={closeDialog}>Chiudi</button>
   </dialog>
 {/if}
 
