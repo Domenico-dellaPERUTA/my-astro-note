@@ -10,6 +10,7 @@
         loadNotesFromDb,
         type Nota,
     } from "../stores/notesStore";
+    import { actions } from "astro:actions";
 
     export let nota: Nota;
     export let indiceSelezionato: number;
@@ -102,17 +103,14 @@
         if (!notaDaSpostare) return;
 
         try {
-            const response = await fetch(`/api/note/${notaDaSpostare.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title: notaDaSpostare.title,
-                    content: notaDaSpostare.content,
-                    parentId: nuovoGenitore.id,
-                }),
+            const { error } = await actions.updateNote({
+                id: notaDaSpostare.id,
+                title: notaDaSpostare.title,
+                content: notaDaSpostare.content,
+                parentId: nuovoGenitore.id,
             });
 
-            if (!response.ok) throw new Error("Errore nello spostamento");
+            if (error) throw new Error("Errore nello spostamento");
 
             await loadNotesFromDb();
             clipboardNote.set(null);
@@ -142,13 +140,12 @@
 
     async function reorder(direction: "up" | "down") {
         try {
-            const response = await fetch("/api/note/reorder", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ noteId: nota.id, direction }),
+            const { error } = await actions.reorderNote({
+                noteId: nota.id,
+                direction,
             });
 
-            if (!response.ok) throw new Error("Errore nel riordinamento");
+            if (error) throw new Error("Errore nel riordinamento");
 
             await loadNotesFromDb();
             message.set({

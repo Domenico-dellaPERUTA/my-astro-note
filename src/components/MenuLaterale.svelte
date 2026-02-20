@@ -16,6 +16,7 @@
     type Nota,
   } from "../stores/notesStore";
   import { onDestroy, onMount } from "svelte";
+  import { actions } from "astro:actions";
   import MenuVoce from "./MenuVoce.svelte";
 
   export let titolo = "Lista Note";
@@ -156,15 +157,10 @@
       type: "confirmation",
       confirm: async () => {
         try {
-          const response = await fetch(`/api/note/${nota.id}`, {
-            method: "DELETE",
-          });
+          const { error } = await actions.deleteNote({ id: nota.id });
+          if (error) throw new Error("Errore nell'eliminazione");
 
-          if (!response.ok) throw new Error("Errore nell'eliminazione");
-
-          const datiBE = await fetch("/api/notes");
-          const noteAggiornate = await datiBE.json();
-          notes.set(noteAggiornate);
+          await loadNotesFromDb();
 
           if ($selectedNoteIndex === indice) {
             selectedNoteIndex.set(-1);
@@ -187,18 +183,16 @@
       const title = `Nota [${$notes.length + 1}] - ${new Date().toLocaleDateString("it-IT", { year: "numeric", month: "2-digit", day: "2-digit" })}`;
       const content = `Contenuto della nota ${$notes.length + 1} ...`;
 
-      const response = await fetch("/api/notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, parentId }),
+      const { data, error } = await actions.createNote({
+        title,
+        content,
+        parentId,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Errore nella creazione");
+      if (error || !data) throw new Error("Errore nella creazione");
 
       notes.update((currentNotes) => {
-        const updatedNotes = [...currentNotes, data];
+        const updatedNotes = [...currentNotes, data as Nota];
         const newIndex = updatedNotes.findIndex((n) => n.id === data.id);
         selectedNoteIndex.set(newIndex);
         return updatedNotes;
@@ -216,17 +210,14 @@
     if (!notaDaSpostare) return;
 
     try {
-      const response = await fetch(`/api/note/${notaDaSpostare.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: notaDaSpostare.title,
-          content: notaDaSpostare.content,
-          parentId: null, // Sposta alla radice
-        }),
+      const { error } = await actions.updateNote({
+        id: notaDaSpostare.id,
+        title: notaDaSpostare.title,
+        content: notaDaSpostare.content,
+        parentId: null, // Sposta alla radice
       });
 
-      if (!response.ok) throw new Error("Errore nello spostamento");
+      if (error) throw new Error("Errore nello spostamento");
 
       await loadNotesFromDb();
       clipboardNote.set(null);

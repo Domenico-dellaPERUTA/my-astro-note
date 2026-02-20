@@ -1,6 +1,7 @@
 <script>
     import OtpInput from "./OtpInput.svelte";
     import { userRole } from "../stores/notesStore";
+    import { actions, isActionError } from "astro:actions";
 
     let username = "";
     let password = "";
@@ -13,15 +14,13 @@
         isError = false;
 
         try {
-            const response = await fetch("/api/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password, token }),
+            const { data, error } = await actions.login({
+                username,
+                password,
+                token,
             });
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
+            if (!error && data?.success) {
                 message = "Login effettuato! Reindirizzamento...";
                 userRole.set("admin"); // Update store
                 setTimeout(() => {
@@ -29,7 +28,13 @@
                 }, 1000);
             } else {
                 isError = true;
-                message = data.message || "Credenziali non valide";
+                if (isActionError(error)) {
+                    message = error.message || "Credenziali non valide";
+                } else if (data && !data.success) {
+                    message = data.message || "Credenziali non valide";
+                } else {
+                    message = "Credenziali non valide";
+                }
             }
         } catch (e) {
             isError = true;

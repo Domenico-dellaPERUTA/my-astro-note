@@ -13,6 +13,7 @@
   } from "../stores/notesStore";
   import { quizActiveState } from "../stores/quizStore";
   import { onMount } from "svelte";
+  import { actions } from "astro:actions";
 
   export let titolo = "Home";
   export let userRole: UserRole | undefined = undefined;
@@ -26,7 +27,7 @@
   async function handleUserClick() {
     if ($userRoleStore === "admin") {
       try {
-        await fetch("/api/logout", { method: "POST" });
+        await actions.logout();
         userRoleStore.set("guest");
         window.location.href = "/";
       } catch (e) {

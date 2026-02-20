@@ -2,6 +2,7 @@
     import * as THREE from "three";
     import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
     import { onMount, onDestroy } from "svelte";
+    import { actions } from "astro:actions";
     import { userRole } from "../stores/notesStore";
 
     // --- Props ---
@@ -92,8 +93,9 @@
 
     async function loadConfig() {
         try {
-            const res = await fetch("/api/config/avatar");
-            const data = await res.json();
+            const { data, error } = await actions.config.getAvatarConfig();
+            if (error) throw new Error("Failed to load avatar config");
+
             if (data.currentModel) {
                 currentModelName = data.currentModel;
             }
@@ -108,8 +110,9 @@
 
     async function loadAvailableModels() {
         try {
-            const res = await fetch("/api/models");
-            availableModels = await res.json();
+            const { data, error } = await actions.config.listModels();
+            if (error) throw new Error("Failed to load models list");
+            availableModels = data;
         } catch (e) {
             console.error("Failed to load models list:", e);
         }
@@ -117,15 +120,11 @@
 
     async function saveModelConfig(name: string) {
         try {
-            await fetch("/api/config/avatar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    currentModel: name,
-                    cameraY: cameraSettings.y,
-                    cameraZ: cameraSettings.z,
-                    cameraTargetY: cameraSettings.targetY,
-                }),
+            await actions.config.updateAvatarConfig({
+                currentModel: name,
+                cameraY: cameraSettings.y,
+                cameraZ: cameraSettings.z,
+                cameraTargetY: cameraSettings.targetY,
             });
         } catch (e) {
             console.error("Failed to save avatar config:", e);
@@ -134,15 +133,11 @@
 
     async function saveCameraConfig() {
         try {
-            await fetch("/api/config/avatar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    currentModel: currentModelName,
-                    cameraY: cameraSettings.y,
-                    cameraZ: cameraSettings.z,
-                    cameraTargetY: cameraSettings.targetY,
-                }),
+            await actions.config.updateAvatarConfig({
+                currentModel: currentModelName,
+                cameraY: cameraSettings.y,
+                cameraZ: cameraSettings.z,
+                cameraTargetY: cameraSettings.targetY,
             });
         } catch (e) {
             console.error("Failed to save camera config:", e);

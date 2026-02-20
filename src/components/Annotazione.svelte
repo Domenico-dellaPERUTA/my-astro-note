@@ -20,6 +20,7 @@
     import ConfigDiagramma from "./ConfigDiagramma.svelte";
     import AvatarParlante from "./AvatarParlante.svelte";
     import { mount, onMount } from "svelte";
+    import { actions } from "astro:actions";
     import { renderMarkdown } from "../lib/markdown";
 
     let isConfigModalOpen = $state(false);
@@ -379,13 +380,14 @@ console.log(hello);
 
         try {
             // Effettua la chiamata API per salvare la nota
-            const response = await fetch(`/api/note/${noteId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(params),
+            const { error } = await actions.updateNote({
+                id: noteId,
+                title: params.title,
+                content: params.content,
+                type: params.type,
             });
 
-            if (!response.ok) {
+            if (error) {
                 const errorMessage = "Errore nel salvataggio";
                 message.set({ text: errorMessage, type: "error" });
                 throw new Error(errorMessage);

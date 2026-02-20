@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { actions } from "astro:actions";
     import { message } from "../stores/notesStore";
 
     let files: { name: string; isDir: boolean; path: string }[] = [];
@@ -15,11 +16,9 @@
     async function loadFiles(path: string = "") {
         loading = true;
         try {
-            const response = await fetch(
-                `/api/admin/files?path=${encodeURIComponent(path)}`,
-            );
-            if (!response.ok) throw new Error("Errore nel caricamento file");
-            files = await response.json();
+            const { data, error } = await actions.listFiles({ path });
+            if (error) throw new Error("Errore nel caricamento file");
+            files = data;
             currentPath = path;
         } catch (err) {
             console.error(err);
@@ -32,17 +31,12 @@
     async function createFolder() {
         if (!newFolderName) return;
         try {
-            const formData = new FormData();
-            formData.append("type", "folder");
-            formData.append("name", newFolderName);
-            formData.append("path", currentPath);
-
-            const response = await fetch("/api/admin/files", {
-                method: "POST",
-                body: formData,
+            const { error } = await actions.createFolder({
+                path: currentPath,
+                name: newFolderName,
             });
 
-            if (!response.ok) throw new Error("Errore creazione cartella");
+            if (error) throw new Error("Errore creazione cartella");
 
             newFolderName = "";
             loadFiles(currentPath);
@@ -58,16 +52,12 @@
 
         try {
             const formData = new FormData();
-            formData.append("type", "file");
-            formData.append("file", file);
             formData.append("path", currentPath);
+            formData.append("file", file);
 
-            const response = await fetch("/api/admin/files", {
-                method: "POST",
-                body: formData,
-            });
+            const { error } = await actions.uploadFile(formData);
 
-            if (!response.ok) throw new Error("Errore upload");
+            if (error) throw new Error("Errore upload");
 
             fileInput.value = "";
             loadFiles(currentPath);
@@ -90,14 +80,10 @@
             type: "confirmation",
             confirm: async () => {
                 try {
-                    const response = await fetch(
-                        `/api/admin/files?path=${encodeURIComponent(file.path)}`,
-                        {
-                            method: "DELETE",
-                        },
-                    );
-
-                    if (!response.ok) throw new Error("Errore eliminazione");
+                    const { error } = await actions.deleteFile({
+                        path: file.path,
+                    });
+                    if (error) throw new Error("Errore eliminazione");
 
                     loadFiles(currentPath);
                     message.set({
@@ -127,18 +113,13 @@
             const oldName = parts.pop()!;
             const parentDir = parts.join("/");
 
-            const formData = new FormData();
-            formData.append("type", "rename");
-            formData.append("oldName", oldName);
-            formData.append("newName", newNameValue);
-            formData.append("path", parentDir);
-
-            const response = await fetch("/api/admin/files", {
-                method: "POST", // Usiamo POST come definito nell'API
-                body: formData,
+            const { error } = await actions.renameFile({
+                path: parentDir,
+                oldName,
+                newName: newNameValue,
             });
 
-            if (!response.ok) throw new Error("Errore ridenominazione");
+            if (error) throw new Error("Errore ridenominazione");
 
             renamingPath = null;
             loadFiles(currentPath);

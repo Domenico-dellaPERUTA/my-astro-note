@@ -24,7 +24,8 @@
     "shiki": "^3.22.0",
     "svelte": "^5.47.1",
     "three": "^0.182.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/jsdom": "^27.0.0",

@@ -49,7 +49,7 @@ export const notesDb = {
     }
   },
 
-  async create(title: string, content: string, parentId?: number, type: 'note' | 'quiz' = 'note'): Promise<number> {
+  async create(title: string, content: string, parentId?: number, type: 'note' | 'quiz' | 'slide' | 'diagram' = 'note'): Promise<number> {
     try {
       const [result] = await pool.query(
         'INSERT INTO notes (title, content, parent_id, type) VALUES (?, ?, ?, ?)',
@@ -70,7 +70,7 @@ export const notesDb = {
     }
   },
 
-  async update(id: number, title: string, content: string, parentId?: number | null, type?: 'note' | 'quiz', position?: number): Promise<void> {
+  async update(id: number, title: string, content: string, parentId?: number | null, type?: 'note' | 'quiz' | 'slide' | 'diagram' | null, position?: number): Promise<void> {
     try {
       if (typeof parentId !== 'undefined' || typeof type !== 'undefined' || typeof position !== 'undefined') {
         const fields = ['title = ?', 'content = ?', 'updated_at = NOW()'];
