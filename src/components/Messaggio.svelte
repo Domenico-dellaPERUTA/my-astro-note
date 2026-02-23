@@ -14,6 +14,7 @@
   let isSpeaking = $state(false);
   let avatarControlsOpen = $state(false);
   let voices: SpeechSynthesisVoice[] = [];
+  let currentUtterance: SpeechSynthesisUtterance | null = null;
 
   // Carica le voci
   function loadVoices() {
@@ -97,79 +98,89 @@
     // Annulla eventuali letture precedenti
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "it-IT";
+    // Reset immediato degli stati se necessario
+    isSpeaking = false;
+    speaking = false;
 
-    // Selezione voce
-    let availableVoices =
-      voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+    // Piccola attesa perché cancel() sia effettivo
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "it-IT";
+      currentUtterance = utterance; // Riferimento persistente per evitare GC
 
-    // Se le voci non sono ancora pronte, aspetta l'evento
-    if (availableVoices.length === 0) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        loadVoices();
-        speakMessage(text);
-      };
-      return;
-    }
+      // Selezione voce
+      let availableVoices =
+        voices.length > 0 ? voices : window.speechSynthesis.getVoices();
 
-    const preferredVoice =
-      availableVoices.find(
-        (v) => v.lang.startsWith("it") && v.name.includes("Emma"),
-      ) ||
-      availableVoices.find(
-        (v) => v.lang.startsWith("it") && v.name.includes("Federica"),
-      ) ||
-      availableVoices.find(
-        (v) =>
-          v.lang.startsWith("it") &&
-          (v.name.includes("Alice") || v.name.includes("Elsa")),
-      ) ||
-      availableVoices.find(
-        (v) =>
-          v.lang.startsWith("it") &&
-          (v.name.includes("Luca") || v.name.includes("Cosimo")),
-      ) ||
-      availableVoices.find(
-        (v) => v.lang.startsWith("it") && !v.name.includes("Google"),
-      );
-
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-      utterance.lang = preferredVoice.lang;
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-    }
-
-    speaking = true;
-    isSpeaking = true;
-
-    let speakingTimeout: any;
-    utterance.onboundary = (event) => {
-      if (event.name === "word") {
-        isSpeaking = true;
-        clearTimeout(speakingTimeout);
-        speakingTimeout = setTimeout(() => {
-          isSpeaking = false;
-        }, 180);
+      // Se le voci non sono ancora pronte, aspetta l'evento
+      if (availableVoices.length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          loadVoices();
+          speakMessage(text);
+        };
+        return;
       }
-    };
 
-    utterance.onend = () => {
-      // Quando finisce di parlare, l'avatar smette di muovere la bocca
-      // MA rimane visibile finché il dialog è aperto (gestito dal template)
-      isSpeaking = false;
-      speaking = false;
-      clearTimeout(speakingTimeout);
-    };
+      const preferredVoice =
+        availableVoices.find(
+          (v) => v.lang.startsWith("it") && v.name.includes("Emma"),
+        ) ||
+        availableVoices.find(
+          (v) => v.lang.startsWith("it") && v.name.includes("Federica"),
+        ) ||
+        availableVoices.find(
+          (v) =>
+            v.lang.startsWith("it") &&
+            (v.name.includes("Alice") || v.name.includes("Elsa")),
+        ) ||
+        availableVoices.find(
+          (v) =>
+            v.lang.startsWith("it") &&
+            (v.name.includes("Luca") || v.name.includes("Cosimo")),
+        ) ||
+        availableVoices.find(
+          (v) => v.lang.startsWith("it") && !v.name.includes("Google"),
+        );
 
-    utterance.onerror = () => {
-      isSpeaking = false;
-      speaking = false;
-    };
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        utterance.lang = preferredVoice.lang;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+      }
 
-    window.speechSynthesis.speak(utterance);
+      speaking = true;
+      isSpeaking = true;
+
+      let speakingTimeout: any;
+      utterance.onboundary = (event) => {
+        if (event.name === "word") {
+          isSpeaking = true;
+          clearTimeout(speakingTimeout);
+          speakingTimeout = setTimeout(() => {
+            isSpeaking = false;
+          }, 180);
+        }
+      };
+
+      utterance.onend = () => {
+        // Quando finisce di parlare, l'avatar smette di muovere la bocca
+        // MA rimane visibile finché il dialog è aperto (gestito dal template)
+        isSpeaking = false;
+        speaking = false;
+        clearTimeout(speakingTimeout);
+      };
+
+      utterance.onerror = (e) => {
+        console.error("SpeechSynthesis error:", e);
+        isSpeaking = false;
+        speaking = false;
+        currentUtterance = null;
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }, 50);
   }
 </script>
 

@@ -58,81 +58,91 @@
 
         const textToRead = `${title}. ${cleanText}`;
 
-        speaking = true;
-        showAvatar = true;
-
         window.speechSynthesis.cancel();
 
-        let utterance = new SpeechSynthesisUtterance(textToRead);
-        utterance.lang = "it-IT";
-        speechUtterance = utterance;
+        // Reset immediato
+        speaking = false;
+        isSpeaking = false;
 
-        const currentVoices = window.speechSynthesis.getVoices();
-        const voicesToUse = currentVoices.length > 0 ? currentVoices : voices;
+        setTimeout(() => {
+            speaking = true;
+            showAvatar = true;
 
-        const preferredVoice =
-            voicesToUse.find(
-                (v) => v.lang.startsWith("it") && v.name.includes("Emma"),
-            ) ||
-            voicesToUse.find(
-                (v) => v.lang.startsWith("it") && v.name.includes("Federica"),
-            ) ||
-            voicesToUse.find(
-                (v) =>
-                    v.lang.startsWith("it") &&
-                    (v.name.includes("Alice") || v.name.includes("Elsa")),
-            ) ||
-            voicesToUse.find(
-                (v) =>
-                    v.lang.startsWith("it") &&
-                    (v.name.includes("Luca") || v.name.includes("Cosimo")),
-            ) ||
-            voicesToUse.find(
-                (v) => v.lang.startsWith("it") && !v.name.includes("Google"),
-            );
+            let utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = "it-IT";
+            speechUtterance = utterance;
 
-        if (preferredVoice) {
-            speechUtterance.voice = preferredVoice;
-            speechUtterance.lang = preferredVoice.lang;
-            speechUtterance.rate = 1.0;
-            speechUtterance.pitch = 1.0;
-            speechUtterance.volume = 1.0;
-        }
+            const currentVoices = window.speechSynthesis.getVoices();
+            const voicesToUse =
+                currentVoices.length > 0 ? currentVoices : voices;
 
-        let speakingTimeout: any;
-        speechUtterance.onboundary = (event) => {
-            if (event.name === "word") {
+            const preferredVoice =
+                voicesToUse.find(
+                    (v) => v.lang.startsWith("it") && v.name.includes("Emma"),
+                ) ||
+                voicesToUse.find(
+                    (v) =>
+                        v.lang.startsWith("it") && v.name.includes("Federica"),
+                ) ||
+                voicesToUse.find(
+                    (v) =>
+                        v.lang.startsWith("it") &&
+                        (v.name.includes("Alice") || v.name.includes("Elsa")),
+                ) ||
+                voicesToUse.find(
+                    (v) =>
+                        v.lang.startsWith("it") &&
+                        (v.name.includes("Luca") || v.name.includes("Cosimo")),
+                ) ||
+                voicesToUse.find(
+                    (v) =>
+                        v.lang.startsWith("it") && !v.name.includes("Google"),
+                );
+
+            if (preferredVoice) {
+                speechUtterance.voice = preferredVoice;
+                speechUtterance.lang = preferredVoice.lang;
+                speechUtterance.rate = 1.0;
+                speechUtterance.pitch = 1.0;
+                speechUtterance.volume = 1.0;
+            }
+
+            let speakingTimeout: any;
+            speechUtterance.onboundary = (event) => {
+                if (event.name === "word") {
+                    isSpeaking = true;
+                    clearTimeout(speakingTimeout);
+                    speakingTimeout = setTimeout(() => {
+                        isSpeaking = false;
+                    }, 180);
+                }
+            };
+
+            speechUtterance.onstart = () => {
                 isSpeaking = true;
+            };
+
+            speechUtterance.onend = () => {
+                speaking = false;
+                isSpeaking = false;
                 clearTimeout(speakingTimeout);
-                speakingTimeout = setTimeout(() => {
-                    isSpeaking = false;
-                }, 180);
-            }
-        };
+                if (!avatarControlsOpen) {
+                    showAvatar = false;
+                }
+            };
 
-        speechUtterance.onstart = () => {
-            isSpeaking = true;
-        };
+            speechUtterance.onerror = () => {
+                speaking = false;
+                isSpeaking = false;
+                clearTimeout(speakingTimeout);
+                speechUtterance = null;
+                if (!avatarControlsOpen) {
+                    showAvatar = false;
+                }
+            };
 
-        speechUtterance.onend = () => {
-            speaking = false;
-            isSpeaking = false;
-            clearTimeout(speakingTimeout);
-            if (!avatarControlsOpen) {
-                showAvatar = false;
-            }
-        };
-
-        speechUtterance.onerror = () => {
-            speaking = false;
-            isSpeaking = false;
-            clearTimeout(speakingTimeout);
-            if (!avatarControlsOpen) {
-                showAvatar = false;
-            }
-        };
-
-        window.speechSynthesis.speak(speechUtterance);
+            window.speechSynthesis.speak(speechUtterance);
+        }, 50);
     }
 </script>
 
