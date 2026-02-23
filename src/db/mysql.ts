@@ -51,9 +51,16 @@ export const notesDb = {
 
   async create(title: string, content: string, parentId?: number, type: 'note' | 'quiz' | 'slide' | 'diagram' = 'note'): Promise<number> {
     try {
+      // Calcola la posizione massima tra i fratelli per posizionare la nuova nota alla fine
+      const [maxPosResult] = await pool.query<any[]>(
+        'SELECT MAX(position) as maxPos FROM notes WHERE parent_id <=> ?',
+        [parentId || null]
+      );
+      const nextPosition = (maxPosResult[0]?.maxPos || 0) + 1;
+
       const [result] = await pool.query(
-        'INSERT INTO notes (title, content, parent_id, type) VALUES (?, ?, ?, ?)',
-        [title, content, parentId || null, type]
+        'INSERT INTO notes (title, content, parent_id, type, position) VALUES (?, ?, ?, ?, ?)',
+        [title, content, parentId || null, type, nextPosition]
       );
 
       console.log('Insert result:', result);

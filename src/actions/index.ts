@@ -176,27 +176,35 @@ export const server = {
                 if (!note) throw new Error('Nota non trovata');
 
                 const allNotes = await notesDb.getAll();
-                const siblings = allNotes
+                let siblings = allNotes
                     .filter(n => n.parent_id === note.parent_id)
-                    .sort((a, b) => a.position - b.position);
+                    .sort((a, b) => (a.position - b.position) || (a.id - b.id));
+
+                // Normalizza le posizioni (se ci sono 0 o duplicati)
+                for (let i = 0; i < siblings.length; i++) {
+                    if (siblings[i].position !== i + 1) {
+                        await notesDb.update(siblings[i].id, siblings[i].title, siblings[i].content, siblings[i].parent_id, siblings[i].type, i + 1);
+                        siblings[i].position = i + 1;
+                    }
+                }
 
                 const currentIndex = siblings.findIndex(n => n.id === note.id);
                 if (currentIndex === -1) throw new Error('Nota non trovata nei fratelli');
 
-                let swapTargetIndex = -1;
+                let targetIndex = -1;
                 if (direction === 'up' && currentIndex > 0) {
-                    swapTargetIndex = currentIndex - 1;
+                    targetIndex = currentIndex - 1;
                 } else if (direction === 'down' && currentIndex < siblings.length - 1) {
-                    swapTargetIndex = currentIndex + 1;
+                    targetIndex = currentIndex + 1;
                 }
 
-                if (swapTargetIndex !== -1) {
-                    const targetNote = siblings[swapTargetIndex];
-                    const newPos = targetNote.position;
-                    const targetNewPos = note.position;
+                if (targetIndex !== -1) {
+                    const targetNote = siblings[targetIndex];
+                    const currentNoteNormalized = siblings[currentIndex];
 
-                    await notesDb.update(note.id, note.title, note.content, note.parent_id, note.type, newPos);
-                    await notesDb.update(targetNote.id, targetNote.title, targetNote.content, targetNote.parent_id, targetNote.type, targetNewPos);
+                    // Scambia le posizioni (usando i valori normalizzati)
+                    await notesDb.update(currentNoteNormalized.id, currentNoteNormalized.title, currentNoteNormalized.content, currentNoteNormalized.parent_id, currentNoteNormalized.type, targetNote.position);
+                    await notesDb.update(targetNote.id, targetNote.title, targetNote.content, targetNote.parent_id, targetNote.type, currentNoteNormalized.position);
 
                     return { success: true };
                 }
