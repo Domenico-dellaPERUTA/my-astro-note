@@ -60,11 +60,11 @@
     let manualMouthIndex = $state(33); // Predefinito per il vampiro e modelli con morph numerici
 
     // Mesh Management
-    let allMeshes = $state([]);
+    let allMeshes = $state.raw<any[]>([]);
 
     // Bone Management
-    let allBones = $state([]);
-    let pose = $state({});
+    let allBones = $state.raw<any[]>([]);
+    let pose = $state.raw<any>({});
     let originalRotations: Record<string, { x: number; y: number; z: number }> =
         {};
 

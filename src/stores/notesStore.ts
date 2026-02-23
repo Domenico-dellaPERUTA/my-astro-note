@@ -41,6 +41,23 @@ export const message = writable<Message>({
     confirm: undefined
 });
 
+/**
+ * Prepara un messaggio che verrà mostrato dopo il ricaricamento della pagina (Flash Message).
+ * Non imposta lo store immediatamente per evitare doppie notifiche o audio interrotti durante il redirect.
+ */
+export function setFlashMessage(msg: Message) {
+    if (typeof window !== 'undefined') {
+        try {
+            sessionStorage.setItem('flash_message', JSON.stringify({
+                text: msg.text,
+                type: msg.type
+            }));
+        } catch (e) {
+            console.error('Errore nel salvataggio del flash message:', e);
+        }
+    }
+}
+
 /* ---------[ Note ]------------------------------------------------ */
 
 // indice della nota selezionata

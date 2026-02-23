@@ -31,6 +31,21 @@
     }
   });
 
+  onMount(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem("flash_message");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          message.set(parsed);
+          sessionStorage.removeItem("flash_message");
+        }
+      } catch (e) {
+        console.error("Errore recupero flash message:", e);
+      }
+    }
+  });
+
   onDestroy(() => {
     if (
       typeof window !== "undefined" &&
@@ -48,7 +63,12 @@
     closeDialog();
   };
 
+  if (typeof window !== "undefined") {
+    (window as any).testMessage = () =>
+      message.set({ text: "Test Message", type: "info" });
+  }
   function closeDialog() {
+    console.log("closeDialog called", new Error().stack);
     if (typeof window === "undefined") return;
 
     const dialog = document.getElementById("mioDialog") as HTMLDialogElement;
@@ -80,18 +100,46 @@
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "it-IT";
 
-    // Selezione voce (logica semplificata da Annotazione.svelte)
-    if (voices.length === 0) voices = window.speechSynthesis.getVoices();
+    // Selezione voce
+    let availableVoices =
+      voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+
+    // Se le voci non sono ancora pronte, aspetta l'evento
+    if (availableVoices.length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        loadVoices();
+        speakMessage(text);
+      };
+      return;
+    }
 
     const preferredVoice =
-      voices.find((v) => v.lang.startsWith("it") && v.name.includes("Emma")) ||
-      voices.find(
+      availableVoices.find(
+        (v) => v.lang.startsWith("it") && v.name.includes("Emma"),
+      ) ||
+      availableVoices.find(
         (v) => v.lang.startsWith("it") && v.name.includes("Federica"),
       ) ||
-      voices.find((v) => v.lang.startsWith("it") && !v.name.includes("Google")); // Fallback
+      availableVoices.find(
+        (v) =>
+          v.lang.startsWith("it") &&
+          (v.name.includes("Alice") || v.name.includes("Elsa")),
+      ) ||
+      availableVoices.find(
+        (v) =>
+          v.lang.startsWith("it") &&
+          (v.name.includes("Luca") || v.name.includes("Cosimo")),
+      ) ||
+      availableVoices.find(
+        (v) => v.lang.startsWith("it") && !v.name.includes("Google"),
+      );
 
     if (preferredVoice) {
       utterance.voice = preferredVoice;
+      utterance.lang = preferredVoice.lang;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
     }
 
     speaking = true;
@@ -104,7 +152,7 @@
         clearTimeout(speakingTimeout);
         speakingTimeout = setTimeout(() => {
           isSpeaking = false;
-        }, 150);
+        }, 180);
       }
     };
 

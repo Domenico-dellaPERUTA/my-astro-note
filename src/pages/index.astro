@@ -29,17 +29,18 @@ if (!id && referer && referer.includes("/admin/files")) {
 
 let selectedNote = null;
 if (id) {
-  const entry = await getEntry("notes", id);
-  if (entry) {
-    selectedNote = {
-      id: parseInt(id),
-      ...entry.data,
-    };
+  // Priorità al Database (Real-time) per vedere subito le modifiche
+  const dbNote = await notesDb.getById(parseInt(id));
+  if (dbNote) {
+    selectedNote = dbNote;
   } else {
-    // Fallback: fetch directly from DB if Content Collection is not yet synced
-    const dbNote = await notesDb.getById(parseInt(id));
-    if (dbNote) {
-      selectedNote = dbNote;
+    // Fallback alle Content Collections (per integrità o se non ancora in DB)
+    const entry = await getEntry("notes", id);
+    if (entry) {
+      selectedNote = {
+        id: parseInt(id),
+        ...entry.data,
+      };
     }
   }
 }

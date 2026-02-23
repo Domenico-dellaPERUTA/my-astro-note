@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { message, type Nota } from "../stores/notesStore";
+    import { message, setFlashMessage, type Nota } from "../stores/notesStore";
     import Diagramma from "./Diagramma.svelte";
     import DiagramBuilder from "./DiagramBuilder.svelte";
     import ConfigDiagramma from "./ConfigDiagramma.svelte";
@@ -86,7 +86,7 @@ console.log(hello);
 
             if (error) throw new Error("Errore nel salvataggio");
 
-            message.set({
+            setFlashMessage({
                 text: "Nota salvata con successo!",
                 type: "success",
             });
