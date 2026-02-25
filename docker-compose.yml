@@ -1,0 +1,47 @@
+services:
+  app:
+    image: node:22.14.0
+    volumes:
+      - .:/workspace
+      - webapp_data:/workspace/public/WebApp
+      - /workspace/node_modules  # Evita conflitti con node_modules locale
+    working_dir: /workspace
+    command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0"
+    ports:
+      - "4321:4321"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=appunti_db
+      - DB_USER=root
+      - DB_PASSWORD=Orione___
+      - WEBAPP_PATH=/workspace/public/WebApp
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11
+    restart: always
+    environment:
+      MARIADB_DATABASE: appunti_db
+      MARIADB_ROOT_PASSWORD: Orione___
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8089:8080"
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+  webapp_data:

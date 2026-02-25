@@ -1,0 +1,13 @@
+{
+  "name": "Astro + MariaDB",
+  "image": "node:22.14.0",
+  "dockerComposeFile": "../docker-compose.dev.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [4321, 8080, 3306],
+  "extensions": [
+    "astro-build.astro-vscode",
+    "bradlc.vscode-tailwindcss"
+  ],
+  "postCreateCommand": "npm install"
+}

@@ -23,3 +23,8 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 package-lock.json
+public/WebApp/immagini
+public/WebApp/informatica-geniale
+public/WebApp/inglese
+public/WebApp/*
+public/WebApp

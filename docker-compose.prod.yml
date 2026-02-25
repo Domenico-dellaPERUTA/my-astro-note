@@ -1,0 +1,54 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: my-astro-app
+    restart: unless-stopped
+    ports:
+      - "4321:4321"
+    networks:
+      - my-astro-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11
+    container_name: my-astro-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: Orione___
+      MYSQL_DATABASE: appunti_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: Orione___
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - my-astro-network
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  adminer:
+    image: adminer
+    container_name: my-astro-adminer
+    restart: unless-stopped
+    ports:
+      - "8089:8080"
+    networks:
+      - my-astro-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  my-astro-network:
+    driver: bridge
+
+volumes:
+  db_data:

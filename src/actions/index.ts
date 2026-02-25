@@ -9,7 +9,7 @@ import path from 'node:path';
 import { getEntry } from "astro:content";
 
 // --- Configurazione File Manager ---
-const BASE_DIR = '/Library/WebServer/WebApp';
+const BASE_DIR = process.env.WEBAPP_PATH || '/workspace/public/WebApp' || '/Library/WebServer/WebApp';
 
 function safePath(relative: string = '') {
     const resolved = path.resolve(BASE_DIR, relative);
