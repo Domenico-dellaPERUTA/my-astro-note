@@ -1,14 +1,25 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
+    image: node:22.14.0
     container_name: my-astro-app
     restart: unless-stopped
+    volumes:
+      - .:/workspace
+      - ./public/WebApp:/workspace/public/WebApp:ro  # Bind mount diretto (read-only)
+      - /workspace/node_modules
+    working_dir: /workspace
+    command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0"
     ports:
       - "4321:4321"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=appunti_db
+      - DB_USER=root
+      - DB_PASSWORD=Orione___
+      - WEBAPP_PATH=/workspace/public/WebApp
     networks:
-      - my-astro-network
+      - proxy_net
     depends_on:
       db:
         condition: service_healthy
@@ -18,21 +29,20 @@ services:
     container_name: my-astro-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: Orione___
-      MYSQL_DATABASE: appunti_db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: Orione___
+      MARIADB_DATABASE: appunti_db
+      MARIADB_ROOT_PASSWORD: Orione___
     volumes:
       - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - my-astro-network
+      - proxy_net
     ports:
       - "3308:3306"
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
 
   adminer:
     image: adminer
@@ -41,14 +51,15 @@ services:
     ports:
       - "8089:8080"
     networks:
-      - my-astro-network
+      - proxy_net
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
 networks:
-  my-astro-network:
-    driver: bridge
+  proxy_net:
+    external: true  
+    name: proxy_net  # ← network esistente
 
 volumes:
   db_data:
+  

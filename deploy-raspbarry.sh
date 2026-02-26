@@ -29,7 +29,7 @@ echo "🐳 Avvio Docker..."
 ssh $REMOTE_USER@$REMOTE_HOST "
   cd $REMOTE_DIR
   cp -r /home/ninja/docker/WebApp ./public/WebApp
-  docker-compose -f docker-compose.prod.yml up -d --build
+  docker compose -f docker-compose.prod.yml up -d --build
 "
 
 echo "✅ Deploy completato! App disponibile su http://shinobi.local:4321"
