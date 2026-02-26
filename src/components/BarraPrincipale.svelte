@@ -57,7 +57,7 @@
 <!-- [ View ] ------------------------------------------------------------------------------------>
 <nav class="barra-principale">
   <div class="header-left">
-    <h1>{editMode === true ? "✏️" : "📎"} {titolo}</h1>
+    <h1>{editMode === true ? "✏️" : "📎"} <a class="bar-titile" href="/">Appunti</a></h1>
   </div>
 
   {#if $quizActiveState.isActive}
@@ -210,5 +210,10 @@
   .quiz-progress {
     color: #ffc107;
     font-weight: bold;
+  }
+
+  .bar-titile {
+    color: #fff;
+    text-decoration: none;
   }
 </style>
