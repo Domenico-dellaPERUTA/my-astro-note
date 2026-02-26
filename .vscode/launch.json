@@ -8,7 +8,7 @@
       "type": "node-terminal"
     },
     {
-      "name": "Deploy to Apache",
+      "name": "Deploy to Local",
       "type": "node-terminal",
       "request": "launch",
       "command": "bash ./deploy.sh"
