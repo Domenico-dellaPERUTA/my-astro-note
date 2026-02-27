@@ -12,6 +12,12 @@
       "type": "node-terminal",
       "request": "launch",
       "command": "bash ./deploy.sh"
+    },
+    {
+      "name": "Deploy to Remote",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bash ./deploy-raspbarry.sh"
     }
   ]
 }

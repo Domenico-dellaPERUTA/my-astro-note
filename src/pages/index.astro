@@ -4,13 +4,15 @@ import MenuLaterale from "../components/MenuLaterale.svelte";
 import NoteLayout from "../layouts/NoteLayout.astro";
 import AnnotazioneEdit from "../components/AnnotazioneEdit.svelte";
 import Layout from "../layouts/Layout.astro";
-import { notesDb } from "../db/mysql";
+import { notesDb , type Note } from "../db/mysql";
 import Messaggio from "../components/Messaggio.svelte";
 import { isAdmin } from "../lib/auth";
 import { getEntry } from "astro:content";
+import PostIt from "../components/PostIt.svelte";
+import ConnectionLines from "../components/ConnectionLines.svelte";
 
 // Carica le note dal database lato server per il menu laterale
-const notesData = await notesDb.getAll();
+const notesData: Note[] | null = await notesDb.getAll();
 const userIsAdmin = isAdmin(Astro.cookies);
 const role = userIsAdmin ? "admin" : "guest";
 
@@ -44,6 +46,14 @@ if (id) {
     }
   }
 }
+
+// Crea l'array di connessioni dal database
+const pinConnections = notesData
+    ?.filter(note => note.parent_id !== null && note.parent_id !== undefined)
+    .map(note => ({
+        fromPinId: note.parent_id!,
+        toPinId: note.id
+    })) || [];
 ---
 
 <Layout>
@@ -67,6 +77,7 @@ if (id) {
     </aside>
 
     <main class="content-area">
+      <canvas id="connection-canvas" class="connection-canvas"></canvas>
       <Messaggio client:load />
       {
         selectedNote ? (
@@ -81,22 +92,37 @@ if (id) {
             />
           )
         ) : (
-          <div class="empty-state">
-            <div class="empty-state-card">
-              <span class="pin">📍 </span>
-              <span class="empty-icon">📓</span>
-              <h1>Benvenuto nel tuo Archivio</h1>
-              <p>
-                Seleziona una nota dal menu laterale per iniziare a leggere o
-                modificare i tuoi appunti.
-              </p>
-              <div class="empty-decoration">
-                <div class="line" />
-                <div class="line" />
-                <div class="line" />
+          notesData && notesData.length > 0 ? (
+            <>
+                {notesData.map((note) => (
+                    <PostIt
+                        id={note.id}
+                        title={note.type || "note"}
+                        message={note.title}
+                        parent={note.parent_id}
+                    />
+                ))}
+                <!-- 
+                <ConnectionLines pinConnections={pinConnections} client:load />
+                -->
+            </>
+          ) : (
+            <div class="empty-state">
+              <div class="empty-state-card">
+                <span class="pin">📍 </span>
+                <span class="empty-icon">📓</span>
+                <h1>Benvenuto nel tuo Archivio</h1>
+                <p>
+                  Non sono presenti note.
+                </p>
+                <div class="empty-decoration">
+                  <div class="line" />
+                  <div class="line" />
+                  <div class="line" />
+                </div>
               </div>
             </div>
-          </div>
+          )
         )
       }
     </main>
@@ -110,8 +136,8 @@ if (id) {
     background-color: var(--bg-paper);
   }
   .sidebar {
-    width: 25vw; /* Circa 1/4 dello schermo */
-    min-width: 250px; /* Evita che diventi troppo stretta su schermi piccoli */
+    width: 25vw;
+    min-width: 250px;
     background-color: var(--sidebar-bg);
     border-right: 1px solid #111;
     overflow-y: auto;
@@ -119,13 +145,17 @@ if (id) {
   .content-area {
     position: relative;
     flex: 1;
-    padding: 0;
+    padding: 20px;
     overflow-y: auto;
-    /* Subtle texture overlay for main content */
     background-image: radial-gradient(#d0c9b6 2px, transparent 2px);
     background-size: 30px 30px;
+    /* Layout per PostIt */
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-content: flex-start;
+    align-items: flex-start;
   }
 
   /* Empty State Styling */
@@ -135,6 +165,7 @@ if (id) {
     justify-content: center;
     align-items: center;
     padding: 40px;
+    width: 100%;
   }
   .empty-state-card {
     background: #fffcf0;
@@ -216,4 +247,15 @@ if (id) {
       transform: translateY(-10px);
     }
   }
+  
+
+  .connection-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
 </style>
