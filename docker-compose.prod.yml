@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     volumes:
       - .:/workspace
-      - ./public/WebApp:/workspace/public/WebApp:ro  # Bind mount diretto (read-only)
+      - ./public/WebApp:/workspace/public/WebApp:ro
       - /workspace/node_modules
     working_dir: /workspace
     command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0"
@@ -15,7 +15,7 @@ services:
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=appunti_db
-      - DB_USER=root
+      - DB_USER=ninja
       - DB_PASSWORD=Orione___
       - WEBAPP_PATH=/workspace/public/WebApp
     networks:
@@ -33,7 +33,6 @@ services:
       MARIADB_ROOT_PASSWORD: Orione___
     volumes:
       - db_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - proxy_net
     ports:
@@ -57,9 +56,8 @@ services:
 
 networks:
   proxy_net:
-    external: true  
-    name: proxy_net  # ← network esistente
+    external: true
+    name: proxy_net
 
 volumes:
   db_data:
-  
