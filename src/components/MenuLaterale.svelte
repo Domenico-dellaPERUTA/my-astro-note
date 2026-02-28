@@ -23,10 +23,12 @@
     titolo = "Lista Note",
     initialNotes = [],
     initialId = null,
+    guideButtonLabel = "Guida di aiuto",
   } = $props<{
     titolo?: string;
     initialNotes?: Nota[];
     initialId?: string | null;
+    guideButtonLabel?: string;
   }>();
 
   // Flag per indicare che lo stato è stato ripristinato e il salvataggio può iniziare
@@ -272,7 +274,7 @@
   </ul>
 
   <div class="guida-link-container">
-    <a href="/guida" class="guida-link"> 📖 Guida ed Help </a>
+    <a href="/guida" class="guida-link"> 📖 {guideButtonLabel} </a>
   </div>
 </aside>
 

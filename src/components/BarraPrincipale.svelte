@@ -57,7 +57,7 @@
 <!-- [ View ] ------------------------------------------------------------------------------------>
 <nav class="barra-principale">
   <div class="header-left">
-    <h1>{editMode === true ? "✏️" : "📎"} <a class="bar-titile" href="/">Appunti</a></h1>
+    <h1>{editMode === true ? "✏️" : "📎"} <a class="bar-titile" href="/">{titolo}</a></h1>
   </div>
 
   {#if $quizActiveState.isActive}

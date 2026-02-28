@@ -3,6 +3,15 @@
     import { userRole } from "../stores/notesStore";
     import { actions, isActionError } from "astro:actions";
 
+    export let passwordLabel;
+    export let tokenLabel;
+    export let userLabel;
+    export let backLink;
+    export let startMassage;
+    export let successMessage;
+    export let errorMessage;
+    export let errorConnectionMessage;
+
     let username = "";
     let password = "";
     let token = "";
@@ -10,7 +19,7 @@
     let isError = false;
 
     async function handleSubmit() {
-        message = "Accesso in corso...";
+        message = startMassage || "Accesso in corso...";
         isError = false;
 
         try {
@@ -21,7 +30,7 @@
             });
 
             if (!error && data?.success) {
-                message = "Login effettuato! Reindirizzamento...";
+                message = successMessage || "Login effettuato! Reindirizzamento...";
                 userRole.set("admin"); // Update store
                 setTimeout(() => {
                     window.location.href = "/";
@@ -29,16 +38,16 @@
             } else {
                 isError = true;
                 if (isActionError(error)) {
-                    message = error.message || "Credenziali non valide";
+                    message = error.message || errorConnectionMessage || "Errore di connessione";
                 } else if (data && !data.success) {
-                    message = data.message || "Credenziali non valide";
+                    message = data.message || errorMessage || "Credenziali non valide";
                 } else {
-                    message = "Credenziali non valide";
+                    message = errorMessage || "Credenziali non valide";
                 }
             }
         } catch (e) {
             isError = true;
-            message = "Errore di connessione";
+            message = errorConnectionMessage || "Errore di connessione";
             console.error(e);
         }
     }
@@ -50,7 +59,7 @@
 
 <form onsubmit={handleSubmit}>
     <div class="form-group">
-        <label for="username">Utente:</label>
+        <label for="username">{userLabel}</label>
         <input
             type="text"
             id="username"
@@ -61,7 +70,7 @@
     </div>
 
     <div class="form-group">
-        <label for="password">Password:</label>
+        <label for="password">{passwordLabel}</label>
         <input
             type="password"
             id="password"
@@ -72,7 +81,7 @@
     </div>
 
     <div class="form-group">
-        <label for="token">Token (OTP):</label>
+        <label for="token">{tokenLabel}</label>
         <!-- OtpInput component updates the local token variable -->
         <OtpInput onInput={(val) => (token = val)} onComplete={handleSubmit} />
     </div>
@@ -85,7 +94,7 @@
         <!--
         <button class="login-btn" type="submit">Accedi</button>
         -->
-        <a href="/" class="back-btn" onclick={resettaUser}>← Torna alle Note</a>
+        <a href="/" class="back-btn" onclick={resettaUser}>{backLink}</a>
     </div>
 </form>
 

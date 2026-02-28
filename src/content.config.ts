@@ -34,6 +34,8 @@ export const collections = {
             title: z.string(),
             description: z.string().optional(),
             order: z.number().default(0),
+            /* Aggiungi i campi per la localizzazione */
+            lang: z.enum(['it', 'en']),
         }),
     }),
     config: defineCollection({

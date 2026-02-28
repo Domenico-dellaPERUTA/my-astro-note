@@ -9,7 +9,11 @@ import Messaggio from "../components/Messaggio.svelte";
 import { isAdmin } from "../lib/auth";
 import { getEntry } from "astro:content";
 import PostIt from "../components/PostIt.svelte";
-import ConnectionLines from "../components/ConnectionLines.svelte";
+// import ConnectionLines from "../components/ConnectionLines.svelte"; // todo: da implementare in futuro
+import { useTranslations } from "../i18n/utils";
+
+const currentLang = Astro.currentLocale  || 'it'; // default 'it'
+const i18n = await useTranslations(currentLang);
 
 // Carica le note dal database lato server per il menu laterale
 const notesData: Note[] | null = await notesDb.getAll();
@@ -59,7 +63,7 @@ const pinConnections = notesData
 <Layout>
   <section>
     <BarraPrincipale
-      titolo={selectedNote ? selectedNote.title : "Appunti"}
+      titolo={i18n("main.title")}
       userRole={role}
       editMode={isEditing}
       client:load
@@ -69,9 +73,10 @@ const pinConnections = notesData
   <div class="main-container">
     <aside class="sidebar">
       <MenuLaterale
-        titolo="Lista Note"
+        titolo={i18n("menu.title")}
         initialNotes={notesData}
         initialId={id}
+        guideButtonLabel={i18n("menu.guideButton")}
         client:load
       />
     </aside>
@@ -102,7 +107,7 @@ const pinConnections = notesData
                         parent={note.parent_id}
                     />
                 ))}
-                <!-- 
+                <!-- todo: da implementare in futuro, per ora è solo un placeholder
                 <ConnectionLines pinConnections={pinConnections} client:load />
                 -->
             </>

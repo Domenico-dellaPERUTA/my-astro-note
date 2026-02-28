@@ -1,18 +1,26 @@
 ---
 import { getCollection, render } from "astro:content";
 import Layout from "../layouts/Layout.astro";
+import { useTranslations } from "../i18n/utils";
 
-const allDocs = await getCollection("docs");
+const currentLang = Astro.currentLocale  || 'it'; // default 'it'
+const i18n = await useTranslations(currentLang);
+
+// Filtra i documenti per lingua usando il campo lang nel frontmatter
+const allDocs = await getCollection("docs", ({ data }) => {
+  return data.lang === currentLang;
+});
+
 const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
 ---
 
 <Layout>
     <div class="guida-wrapper">
         <header class="guida-header">
-            <a href="/" class="back-link">← Torna alle Note</a>
-            <h1>Guida dell'Applicazione</h1>
+            <a href="/" class="back-link">{i18n("guide.backLink")}</a>
+            <h1>{i18n("guide.title")}</h1>
             <p class="subtitle">
-                Tutto quello che c'è da sapere per usare al meglio le tue note.
+                {i18n("guide.subtitle")}
             </p>
         </header>
 
