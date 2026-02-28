@@ -24,11 +24,13 @@
     initialNotes = [],
     initialId = null,
     guideButtonLabel = "Guida di aiuto",
+    currentLang = "en",
   } = $props<{
     titolo?: string;
     initialNotes?: Nota[];
     initialId?: string | null;
     guideButtonLabel?: string;
+    currentLang?: string;
   }>();
 
   // Flag per indicare che lo stato è stato ripristinato e il salvataggio può iniziare
@@ -125,7 +127,7 @@
         // Sincronizza cookie per il server
         const note = $notes[$selectedNoteIndex];
         if (note) {
-          const url = `/?id=${note.id}${editVal === "true" ? "&edit=true" : ""}`;
+          const url = `/${currentLang}/?id=${note.id}${editVal === "true" ? "&edit=true" : ""}`;
           document.cookie = `last_note_url=${encodeURIComponent(url)}; path=/; max-age=3600; SameSite=Lax`;
         }
       } catch (e) {}
@@ -159,11 +161,11 @@
   }
 
   async function seleziona(nota: Nota) {
-    window.location.href = `/?id=${nota.id}`;
+    window.location.href = `/${currentLang}/?id=${nota.id}`;
   }
 
   async function edita(nota: Nota) {
-    window.location.href = `/?id=${nota.id}&edit=true`;
+    window.location.href = `/${currentLang}/?id=${nota.id}&edit=true`;
   }
 
   async function cancella(nota: Nota) {
@@ -178,7 +180,7 @@
           if (error) throw new Error("Errore nell'eliminazione");
 
           // Redirect to home
-          window.location.href = "/";
+          window.location.href = `/${currentLang}/`;
         } catch (error) {
           console.error(error);
           message.set({ text: "Errore durante l'eliminazione", type: "error" });
@@ -206,7 +208,7 @@
       if (error || !data) throw new Error("Errore nella creazione");
 
       // Redirect to new note in edit mode
-      window.location.href = `/?id=${data.id}&edit=true`;
+      window.location.href = `/${currentLang}/?id=${data.id}&edit=true`;
     } catch (error) {
       const errorMessage = "Errore nella creazione della nota";
       message.set({ text: errorMessage, type: "error" });
@@ -274,7 +276,9 @@
   </ul>
 
   <div class="guida-link-container">
-    <a href="/guida" class="guida-link"> 📖 {guideButtonLabel} </a>
+    <a href={`/${currentLang}/guida`} class="guida-link">
+      📖 {guideButtonLabel}
+    </a>
   </div>
 </aside>
 

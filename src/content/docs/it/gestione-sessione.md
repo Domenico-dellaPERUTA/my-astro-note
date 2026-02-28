@@ -2,7 +2,6 @@
 title: "Accesso e Sessione"
 description: "Come passare dalla modalità Ospite a quella Amministratore e viceversa."
 order: 2
-lang: "it"
 translationKey: "gestione-sessione"
 ---
 

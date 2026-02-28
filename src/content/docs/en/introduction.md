@@ -2,7 +2,6 @@
 title: "Welcome to the Notes App"
 description: "A brief introduction to the application."
 order: 1
-lang: "en"
 ---
 # Welcome
 

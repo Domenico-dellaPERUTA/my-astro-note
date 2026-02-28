@@ -2,7 +2,6 @@
 title: "Benvenuto nella App Note"
 description: "Una breve introduzione all'applicazione."
 order: 1
-lang: "it"
 ---
 # Benvenuto
 

@@ -14,15 +14,18 @@
   import { quizActiveState } from "../stores/quizStore";
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
+  import LanguagePicker from "./LanguagePicker.svelte";
 
   let {
     titolo = "Home",
     userRole,
     editMode = false,
+    currentLang = "en",
   } = $props<{
     titolo?: string;
     userRole?: UserRole;
     editMode?: boolean;
+    currentLang?: string;
   }>();
 
   onMount(() => {
@@ -38,12 +41,12 @@
       try {
         await actions.logout();
         userRoleStore.set("guest");
-        window.location.href = "/";
+        window.location.href = `/${currentLang}/`;
       } catch (e) {
         console.error("Errore logout:", e);
       }
     } else {
-      window.location.href = "/login";
+      window.location.href = `/${currentLang}/login`;
     }
   }
 
@@ -57,7 +60,10 @@
 <!-- [ View ] ------------------------------------------------------------------------------------>
 <nav class="barra-principale">
   <div class="header-left">
-    <h1>{editMode === true ? "✏️" : "📎"} <a class="bar-titile" href="/">{titolo}</a></h1>
+    <h1>
+      {editMode === true ? "✏️" : "📎"}
+      <a class="bar-titile" href={`/${currentLang}/`}>{titolo}</a>
+    </h1>
   </div>
 
   {#if $quizActiveState.isActive}
@@ -75,10 +81,16 @@
 
   <div class="nav-actions">
     {#if $userRoleStore === "admin"}
-      <a href="/admin/files" class="admin-link" title="Gestione File e Media">
+      <a
+        href={`/${currentLang}/admin/files`}
+        class="admin-link"
+        title="Gestione File e Media"
+      >
         📁 File
       </a>
     {/if}
+
+    <LanguagePicker {currentLang} />
 
     <button
       class="user-btn"
@@ -173,7 +185,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-width: 90%;
+    flex: 1;
   }
 
   .quiz-status-header {

@@ -3,18 +3,18 @@ import Layout from "../layouts/Layout.astro";
 import LoginForm from "../components/LoginForm.svelte";
 import { useTranslations } from "../i18n/utils";
 
-const currentLang = Astro.currentLocale  || 'it'; // default 'it'
-const i18n = await useTranslations(currentLang);
+import { ui } from "../i18n/ui";
 
-
+const currentLang = (Astro.currentLocale as keyof typeof ui) || "it";
+const i18n = useTranslations(currentLang);
 ---
 
-<Layout>
+<Layout lang={currentLang}>
     <div class="login-container">
         <div class="login-card">
             <h2>{i18n("login.title")}</h2>
 
-            <LoginForm 
+            <LoginForm
                 passwordLabel={i18n("login.password")}
                 tokenLabel={i18n("login.token")}
                 userLabel={i18n("login.username")}
@@ -23,7 +23,9 @@ const i18n = await useTranslations(currentLang);
                 successMessage={i18n("login.message.success")}
                 errorMessage={i18n("login.message.error")}
                 errorConnectionMessage={i18n("login.message.errorConnection")}
-                client:load />
+                currentLang={currentLang}
+                client:load
+            />
         </div>
     </div>
 </Layout>

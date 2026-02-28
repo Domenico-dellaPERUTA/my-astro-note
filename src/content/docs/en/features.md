@@ -2,7 +2,6 @@
 title: "Notes Management"
 description: "How to create, edit and delete your notes."
 order: 3
-lang: "en"
 ---
 # Notes Management
 

@@ -9,10 +9,10 @@ export default defineConfig({
         mode: 'standalone',
     }),
     i18n: {
-        defaultLocale: "en",
+        defaultLocale: "it",
         locales: ["it", "en"],
         routing: {
-            prefixDefaultLocale: false
+            prefixDefaultLocale: true
         }
     }
 });

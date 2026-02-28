@@ -2,7 +2,6 @@
 title: "Access and Session"
 description: "How to switch between Guest and Administrator mode and vice versa."
 order: 2
-lang: "en"
 ---
 
 # Access and Session

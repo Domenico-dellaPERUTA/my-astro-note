@@ -2,7 +2,6 @@
 title: "Gestione delle Note"
 description: "Come creare, modificare ed eliminare le tue note."
 order: 3
-lang: "it"
 translationKey: "gestione-note"
 ---
 # Gestione delle Note

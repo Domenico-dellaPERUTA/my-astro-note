@@ -11,6 +11,7 @@
     export let successMessage;
     export let errorMessage;
     export let errorConnectionMessage;
+    export let currentLang = "en";
 
     let username = "";
     let password = "";
@@ -30,17 +31,24 @@
             });
 
             if (!error && data?.success) {
-                message = successMessage || "Login effettuato! Reindirizzamento...";
+                message =
+                    successMessage || "Login effettuato! Reindirizzamento...";
                 userRole.set("admin"); // Update store
                 setTimeout(() => {
-                    window.location.href = "/";
+                    window.location.href = `/${currentLang}/`;
                 }, 1000);
             } else {
                 isError = true;
                 if (isActionError(error)) {
-                    message = error.message || errorConnectionMessage || "Errore di connessione";
+                    message =
+                        error.message ||
+                        errorConnectionMessage ||
+                        "Errore di connessione";
                 } else if (data && !data.success) {
-                    message = data.message || errorMessage || "Credenziali non valide";
+                    message =
+                        data.message ||
+                        errorMessage ||
+                        "Credenziali non valide";
                 } else {
                     message = errorMessage || "Credenziali non valide";
                 }
@@ -64,7 +72,7 @@
             type="text"
             id="username"
             bind:value={username}
-            placeholder="Nome utente"
+            placeholder=""
             required
         />
     </div>
@@ -75,7 +83,7 @@
             type="password"
             id="password"
             bind:value={password}
-            placeholder="Password"
+            placeholder=""
             required
         />
     </div>
@@ -94,7 +102,9 @@
         <!--
         <button class="login-btn" type="submit">Accedi</button>
         -->
-        <a href="/" class="back-btn" onclick={resettaUser}>{backLink}</a>
+        <a href={`/${currentLang}/`} class="back-btn" onclick={resettaUser}
+            >{backLink}</a
+        >
     </div>
 </form>
 

@@ -5,27 +5,37 @@ import BarraPrincipale from "../../components/BarraPrincipale.svelte";
 import Messaggio from "../../components/Messaggio.svelte";
 import { isAdmin } from "../../lib/auth";
 
+import { useTranslations } from "../../i18n/utils";
+
+import { ui } from "../../i18n/ui";
+
+const currentLang = (Astro.currentLocale as keyof typeof ui) || "it";
+const i18n = useTranslations(currentLang);
+
 // Controllo sicurezza lato server
 if (!isAdmin(Astro.cookies)) {
-    return Astro.redirect("/login");
+    return Astro.redirect(`/${currentLang}/login`);
 }
 ---
 
-<Layout>
+<Layout lang={currentLang}>
     <section>
         <BarraPrincipale
-            titolo="Gestione File & Media"
+            titolo={i18n("admin.title")}
             userRole="admin"
+            currentLang={currentLang}
             client:load
         />
     </section>
 
     <main class="admin-container">
         <header class="admin-header">
-            <a href="/" class="back-link">← Torna alle Note</a>
-            <h2>Area Riservata: Gestione Asset</h2>
+            <a href={`/${currentLang}/`} class="back-link"
+                >{i18n("admin.backLink")}</a
+            >
+            <h2>{i18n("admin.subtitle")}</h2>
             <p>
-                Qui puoi caricare immagini e gestire documenti per le tue note.
+                {i18n("admin.description")}
             </p>
         </header>
 

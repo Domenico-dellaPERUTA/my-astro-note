@@ -3,21 +3,25 @@ import { getCollection, render } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import { useTranslations } from "../i18n/utils";
 
-const currentLang = Astro.currentLocale  || 'it'; // default 'it'
-const i18n = await useTranslations(currentLang);
+import { ui } from "../i18n/ui";
 
-// Filtra i documenti per lingua usando il campo lang nel frontmatter
-const allDocs = await getCollection("docs", ({ data }) => {
-  return data.lang === currentLang;
+const currentLang = (Astro.currentLocale as keyof typeof ui) || "it";
+const i18n = useTranslations(currentLang);
+
+// Filtra i documenti per lingua usando la cartella (id)
+const allDocs = await getCollection("docs", ({ id }) => {
+    return id.startsWith(`${currentLang}/`);
 });
 
 const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
 ---
 
-<Layout>
+<Layout lang={currentLang}>
     <div class="guida-wrapper">
         <header class="guida-header">
-            <a href="/" class="back-link">{i18n("guide.backLink")}</a>
+            <a href={`/${currentLang}/`} class="back-link"
+                >{i18n("guide.backLink")}</a
+            >
             <h1>{i18n("guide.title")}</h1>
             <p class="subtitle">
                 {i18n("guide.subtitle")}
