@@ -1,11 +1,11 @@
 ---
 import { getCollection, render } from "astro:content";
-import Layout from "../layouts/Layout.astro";
-import { useTranslations } from "../i18n/utils";
+import Layout from "../../layouts/Layout.astro";
+import { useTranslations } from "../../i18n/utils";
+import { ui } from "../../i18n/ui";
 
-import { ui } from "../i18n/ui";
-
-const currentLang = (Astro.currentLocale as keyof typeof ui) || "it";
+const { lang } = Astro.params;
+const currentLang = (lang as keyof typeof ui) || "it";
 const i18n = useTranslations(currentLang);
 
 // Filtra i documenti per lingua usando la cartella (id)
@@ -14,6 +14,10 @@ const allDocs = await getCollection("docs", ({ id }) => {
 });
 
 const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
+
+export function getStaticPaths() {
+    return [{ params: { lang: "en" } }, { params: { lang: "it" } }];
+}
 ---
 
 <Layout lang={currentLang}>
@@ -30,14 +34,7 @@ const sortedDocs = allDocs.sort((a, b) => a.data.order - b.data.order);
 
         <main class="guida-content">
             <div class="docs-list">
-                {
-                    allDocs.length === 0 && (
-                        <p>
-                            Nessun manuale trovato. Controlla la tua cartella
-                            `src/content/docs/`.
-                        </p>
-                    )
-                }
+                {allDocs.length === 0 && <p>{i18n("guide.noDocsFound")}</p>}
                 {
                     sortedDocs.map(async (doc) => {
                         const { Content } = await render(doc);

@@ -1,12 +1,16 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import LoginForm from "../components/LoginForm.svelte";
-import { useTranslations } from "../i18n/utils";
+import Layout from "../../layouts/Layout.astro";
+import LoginForm from "../../components/LoginForm.svelte";
+import { useTranslations } from "../../i18n/utils";
+import { ui } from "../../i18n/ui";
 
-import { ui } from "../i18n/ui";
-
-const currentLang = (Astro.currentLocale as keyof typeof ui) || "it";
+const { lang } = Astro.params;
+const currentLang = (lang as keyof typeof ui) || "it";
 const i18n = useTranslations(currentLang);
+
+export function getStaticPaths() {
+    return [{ params: { lang: "en" } }, { params: { lang: "it" } }];
+}
 ---
 
 <Layout lang={currentLang}>
@@ -62,74 +66,11 @@ const i18n = useTranslations(currentLang);
         letter-spacing: 2px;
     }
 
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-    }
-
-    input {
-        width: 100%;
-        padding: 10px;
-        font-family: var(--font-main);
-        font-size: 1.1rem;
-        border: none;
-        border-bottom: 2px dashed #999;
-        background: transparent;
-        outline: none;
-        transition: border-color 0.3s;
-    }
-
-    input:focus {
-        border-bottom-color: var(--highlight);
-        background-color: rgba(0, 0, 0, 0.02);
-    }
-
     .actions {
         display: flex;
         flex-direction: column;
         gap: 15px;
         margin-top: 30px;
         text-align: center;
-    }
-
-    button {
-        padding: 12px;
-        font-family: var(--font-main);
-        font-size: 1rem;
-        font-weight: bold;
-        text-transform: uppercase;
-        cursor: pointer;
-        border: 1px solid #999;
-        background: transparent;
-        transition: all 0.2s;
-    }
-
-    .login-btn {
-        background-color: var(--sidebar-bg);
-        color: #fff;
-        border: none;
-    }
-
-    .login-btn:hover {
-        background-color: #000;
-    }
-
-    .back-btn {
-        color: #666;
-        font-size: 0.9rem;
-        text-decoration: none;
-        font-family: var(--font-main);
-    }
-
-    .back-btn:hover {
-        text-decoration: underline;
-        color: #333;
     }
 </style>

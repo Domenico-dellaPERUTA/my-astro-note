@@ -1,20 +1,23 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import GestoreFile from "../../components/GestoreFile.svelte";
-import BarraPrincipale from "../../components/BarraPrincipale.svelte";
-import Messaggio from "../../components/Messaggio.svelte";
-import { isAdmin } from "../../lib/auth";
+import Layout from "../../../layouts/Layout.astro";
+import GestoreFile from "../../../components/GestoreFile.svelte";
+import BarraPrincipale from "../../../components/BarraPrincipale.svelte";
+import Messaggio from "../../../components/Messaggio.svelte";
+import { isAdmin } from "../../../lib/auth";
+import { useTranslations } from "../../../i18n/utils";
+import { ui } from "../../../i18n/ui";
 
-import { useTranslations } from "../../i18n/utils";
-
-import { ui } from "../../i18n/ui";
-
-const currentLang = (Astro.currentLocale as keyof typeof ui) || "it";
+const { lang } = Astro.params;
+const currentLang = (lang as keyof typeof ui) || "it";
 const i18n = useTranslations(currentLang);
 
 // Controllo sicurezza lato server
 if (!isAdmin(Astro.cookies)) {
     return Astro.redirect(`/${currentLang}/login`);
+}
+
+export function getStaticPaths() {
+    return [{ params: { lang: "en" } }, { params: { lang: "it" } }];
 }
 ---
 
