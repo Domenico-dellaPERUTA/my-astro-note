@@ -108,6 +108,7 @@ export function getStaticPaths() {
                             content={selectedNote.content}
                             type={(selectedNote.type as any) || "note"}
                             userRole={role}
+                            targetLang={currentLang}
                         />
                     )
                 ) : notesData && notesData.length > 0 ? (

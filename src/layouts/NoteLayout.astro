@@ -1,4 +1,6 @@
 ---
+// src/layouts/NoteLayout.astro
+
 import { renderMarkdown } from "../lib/markdown";
 import Diagramma from "../components/Diagramma.svelte";
 import AudioAvatarBridge from "../components/AudioAvatarBridge.svelte";
@@ -8,9 +10,10 @@ interface Props {
     content: string;
     type: "note" | "quiz" | "slide" | "diagram";
     userRole: "guest" | "admin";
+    targetLang?: string; // Nuova prop per la lingua target (es: "en", "es", "fr", ecc.)
 }
 
-const { title, content, type, userRole } = Astro.props;
+const { title, content, type, userRole, targetLang = "original" } = Astro.props;
 const html = type !== "diagram" ? await renderMarkdown(content) : "";
 const id = Astro.url.searchParams.get("id");
 ---
@@ -54,6 +57,7 @@ const id = Astro.url.searchParams.get("id");
                     id="testo-renderizzato"
                     class="testo"
                     data-content={content}
+                    data-target-lang={targetLang}
                 >
                     <Fragment set:html={html} />
                 </div>
@@ -66,6 +70,127 @@ const id = Astro.url.searchParams.get("id");
     import { mount } from "svelte";
     import Quiz from "../components/Quiz.svelte";
     import Slide from "../components/Slide.svelte";
+
+    let originalHTML = "";
+    let currentLang = "original";
+    let isTranslating = false;
+    let translationCache: Record<string, string> = {};
+
+    async function translateText(text: string, targetLang: string): Promise<string> {
+        try {
+            const response = await fetch(
+                `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
+            );
+            const data = await response.json();
+            return data[0].map((item: any) => item[0]).join("");
+        } catch (error) {
+            console.error("Translation error:", error);
+            return text;
+        }
+    }
+
+    async function translateHTML(html: string, targetLang: string): Promise<string> {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        // Trova tutti i nodi di testo
+        const walker = document.createTreeWalker(
+            doc.body,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: function (node) {
+                    // Salta nodi vuoti o solo spazi
+                    if (!node.textContent?.trim()) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    // Salta nodi dentro <code> o <pre>
+                    let parent = node.parentElement;
+                    while (parent) {
+                        if (
+                            parent.tagName === "CODE" ||
+                            parent.tagName === "PRE" ||
+                            parent.classList.contains("quiz-placeholder") ||
+                            parent.classList.contains("slide-placeholder")
+                        ) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        parent = parent.parentElement;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                },
+            }
+        );
+
+        const textNodes: Node[] = [];
+        let node;
+        while ((node = walker.nextNode())) {
+            textNodes.push(node);
+        }
+
+        // Traduci ogni nodo di testo
+        for (const textNode of textNodes) {
+            const originalText = textNode.textContent || "";
+            if (originalText.trim()) {
+                const translatedText = await translateText(originalText, targetLang);
+                textNode.textContent = translatedText;
+            }
+        }
+
+        return doc.body.innerHTML;
+    }
+
+    async function applyTranslation(targetLang: string) {
+        const container = document.getElementById("testo-renderizzato");
+        if (!container) return;
+        if (isTranslating) return;
+
+        // Se la lingua è già quella corrente, non fare nulla
+        if (currentLang === targetLang) return;
+
+        // Se torna all'originale
+        if (targetLang === "original" || targetLang === "it") {
+            container.innerHTML = originalHTML;
+            currentLang = "original";
+            await mountInteractiveComponents();
+            return;
+        }
+
+        isTranslating = true;
+
+        // Mostra loader
+        const loader = document.createElement("div");
+        loader.className = "translation-loader";
+        loader.textContent = "Traduzione in corso...";
+        container.insertBefore(loader, container.firstChild);
+
+        try {
+            // Salva l'HTML originale se non è già salvato
+            if (!originalHTML) {
+                originalHTML = container.innerHTML;
+            }
+
+            // Usa la cache se disponibile
+            let translatedHTML: string;
+            if (translationCache[targetLang]) {
+                translatedHTML = translationCache[targetLang];
+            } else {
+                translatedHTML = await translateHTML(originalHTML, targetLang);
+                translationCache[targetLang] = translatedHTML;
+            }
+
+            container.innerHTML = translatedHTML;
+            currentLang = targetLang;
+            await mountInteractiveComponents();
+        } catch (error) {
+            console.error("Error during translation:", error);
+            // Ripristina l'originale in caso di errore
+            container.innerHTML = originalHTML;
+            currentLang = "original";
+        } finally {
+            loader?.remove();
+            isTranslating = false;
+        }
+    }
 
     async function mountInteractiveComponents() {
         const container = document.getElementById("testo-renderizzato");
@@ -149,7 +274,50 @@ const id = Astro.url.searchParams.get("id");
         }
     }
 
-    mountInteractiveComponents();
+    // Inizializzazione
+    async function init() {
+        const container = document.getElementById("testo-renderizzato");
+        if (!container) return;
+
+        // Salva l'HTML originale
+        originalHTML = container.innerHTML;
+
+        // Monta i componenti interattivi
+        await mountInteractiveComponents();
+
+        // Applica la traduzione iniziale se specificata
+        const targetLang = container.getAttribute("data-target-lang");
+        if (targetLang && targetLang !== "original" && targetLang !== "it") {
+            await applyTranslation(targetLang);
+        }
+
+        // Osserva i cambiamenti dell'attributo data-target-lang
+        const observer = new MutationObserver(async (mutations) => {
+            for (const mutation of mutations) {
+                if (
+                    mutation.type === "attributes" &&
+                    mutation.attributeName === "data-target-lang"
+                ) {
+                    const newLang = container.getAttribute("data-target-lang");
+                    if (newLang) {
+                        await applyTranslation(newLang);
+                    }
+                }
+            }
+        });
+
+        observer.observe(container, {
+            attributes: true,
+            attributeFilter: ["data-target-lang"],
+        });
+    }
+
+    // Esegui l'inizializzazione quando il DOM è pronto
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
 </script>
 
 <style>
@@ -174,10 +342,10 @@ const id = Astro.url.searchParams.get("id");
             5px 5px 0px rgba(0, 0, 0, 0.05);
         margin: 20px;
         max-width: 1200px;
-        width: calc(100% - 40px); /* Assicura che si allarghi */
+        width: calc(100% - 40px);
         min-height: 80vh;
-        height: auto; /* Cresce col contenuto */
-        flex-shrink: 0; /* Non si restringe mai per stare nel viewport */
+        height: auto;
+        flex-shrink: 0;
     }
     .header-view {
         display: flex;
@@ -259,5 +427,16 @@ const id = Astro.url.searchParams.get("id");
         border: 1px solid #ccc;
         padding: 10px;
         overflow: hidden;
+    }
+    
+    .translation-loader {
+        background-color: #fff3cd;
+        border: 1px solid #ffc107;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        text-align: center;
+        font-weight: bold;
+        color: #856404;
     }
 </style>
