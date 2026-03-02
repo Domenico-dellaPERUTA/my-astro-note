@@ -11,6 +11,13 @@
     const languages = [
         { code: "en", icon: "🇬🇧", label: "English" },
         { code: "it", icon: "🇮🇹", label: "Italiano" },
+        { code: "es", icon: "🇪🇸", label: "Español" },
+        { code: "fr", icon: "🇫🇷", label: "Français" },
+        { code: "de", icon: "🇩🇪", label: "Deutsch" },
+        { code: "zh", icon: "🇨🇳", label: "中文" },
+        { code: "ja", icon: "🇯🇵", label: "日本語" },
+        { code: "ar", icon: "🇸🇦", label: "العربية"},
+        { code: "ru", icon: "🇷🇺", label: "Русский"},
     ];
 
     function switchLanguage(targetLang: string) {
@@ -26,7 +33,9 @@
         // Se il primo segmento è una delle lingue conosciute, lo sostituiamo
         if (
             segments.length > 0 &&
-            (segments[0] === "en" || segments[0] === "it")
+            (segments[0] === "en" || segments[0] === "it" || segments[0] === "es" || segments[0] === "fr" 
+            || segments[0] === "de" || segments[0] === "zh" || segments[0] === "ja" || segments[0] === "ar" 
+            || segments[0] === "ru")
         ) {
             segments[0] = targetLang;
         } else {

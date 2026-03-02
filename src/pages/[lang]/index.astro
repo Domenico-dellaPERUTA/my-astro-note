@@ -68,7 +68,17 @@ const pinConnections =
         })) || [];
 
 export function getStaticPaths() {
-    return [{ params: { lang: "en" } }, { params: { lang: "it" } }];
+    return [
+        { params: { lang: "en" } }, 
+        { params: { lang: "it" } }, 
+        { params: { lang: "es" } }, 
+        { params: { lang: "fr" } }, 
+        { params: { lang: "de" } }, 
+        { params: { lang: "zh" } }, 
+        { params: { lang: "ja" } }, 
+        { params: { lang: "ar" } }, 
+        { params: { lang: "ru" } }
+    ];
 }
 ---
 
@@ -79,6 +89,7 @@ export function getStaticPaths() {
             userRole={role}
             editMode={isEditing}
             currentLang={currentLang}
+            file={i18n("main.button.file")}
             client:load
         />
     </section>
@@ -101,7 +112,21 @@ export function getStaticPaths() {
             {
                 selectedNote ? (
                     isEditing && userIsAdmin ? (
-                        <AnnotazioneEdit note={selectedNote} client:load />
+                        <AnnotazioneEdit 
+                        note={selectedNote} 
+                        i18n={{
+                            title: i18n("editor.title"),
+                            text: i18n("editor.text"),
+                            type: i18n("editor.type"),
+                            note: i18n("editor.type.note"),
+                            quiz: i18n("editor.type.quiz"),
+                            slide: i18n("editor.type.slide"),
+                            diagram: i18n("editor.type.diagram"),
+                            help: i18n("editor.help"),
+                            save: i18n("editor.save"),
+                            cancel: i18n("editor.cancel"),
+                        }}
+                        client:load />
                     ) : (
                         <NoteLayout
                             title={selectedNote.title}

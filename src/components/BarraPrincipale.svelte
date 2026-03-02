@@ -21,11 +21,13 @@
     userRole,
     editMode = false,
     currentLang = "en",
+    file = "",
   } = $props<{
     titolo?: string;
     userRole?: UserRole;
     editMode?: boolean;
     currentLang?: string;
+    file?: string;
   }>();
 
   onMount(() => {
@@ -86,7 +88,7 @@
         class="admin-link"
         title="Gestione File e Media"
       >
-        📁 File
+        📁 {file}
       </a>
     {/if}
 

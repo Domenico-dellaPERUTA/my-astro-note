@@ -9,7 +9,17 @@ const currentLang = (lang as keyof typeof ui) || "it";
 const i18n = useTranslations(currentLang);
 
 export function getStaticPaths() {
-    return [{ params: { lang: "en" } }, { params: { lang: "it" } }];
+    return [
+        { params: { lang: "en" } }, 
+        { params: { lang: "it" } }, 
+        { params: { lang: "es" } }, 
+        { params: { lang: "fr" } }, 
+        { params: { lang: "de" } }, 
+        { params: { lang: "zh" } }, 
+        { params: { lang: "ja" } }, 
+        { params: { lang: "ar" } }, 
+        { params: { lang: "ru" } }
+    ];
 }
 ---
 

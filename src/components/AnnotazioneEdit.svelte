@@ -5,7 +5,24 @@
     import ConfigDiagramma from "./ConfigDiagramma.svelte";
     import { actions } from "astro:actions";
 
-    let { note } = $props<{ note: Nota }>();
+    let { 
+        note, 
+        i18n 
+    } = $props<{ 
+        note: Nota, 
+        i18n: {
+            title: string,
+            text: string, 
+            type: string, 
+            note: string, 
+            quiz: string, 
+            slide: string, 
+            diagram: string, 
+            help: string, 
+            save: string, 
+            cancel: string
+        } 
+    }>();
 
     let localTitolo = $state(note.title);
     let localTesto = $state(note.content);
@@ -131,22 +148,22 @@ console.log(hello);
 >
     <div class="header-edit">
         <div class="field">
-            <label for="titolo">Titolo:</label>
+            <label for="titolo">{i18n.title}</label>
             <input type="text" id="titolo" bind:value={localTitolo} />
         </div>
         <div class="field type-selector">
-            <label for="tipo">Tipo:</label>
+            <label for="tipo">{i18n.type}</label>
             <select id="tipo" value={localTipo} onchange={handleTypeChange}>
-                <option value="note">📝 Nota</option>
-                <option value="quiz">❓ Quiz</option>
-                <option value="slide">🎞️ Slide</option>
-                <option value="diagram">📊 Diagramma</option>
+                <option value="note">📝 {i18n.note}</option>
+                <option value="quiz">❓ {i18n.quiz}</option>
+                <option value="slide">🎞️ {i18n.slide}</option>
+                <option value="diagram">📊 {i18n.diagram}</option>
             </select>
         </div>
     </div>
 
     <label for="testo"
-        >Testo ({localTipo === "diagram" ? "DOT" : "Markdown"}):</label
+        >{i18n.text} ({localTipo === "diagram" ? "DOT" : "Markdown"}):</label
     >
     <div class="editor-container">
         {#if localTipo === "diagram" && visualMode}
@@ -171,7 +188,7 @@ console.log(hello);
         {/if}
 
         <div class="sidebar-tools">
-            <button class="save" type="submit">💾 SALVA</button>
+            <button class="save" type="submit">💾 {i18n.save}</button>
             {#if localTipo === "diagram"}
                 <button
                     class="toggle-mode"
@@ -181,7 +198,7 @@ console.log(hello);
                     {visualMode ? "📝 Modifica Testo" : "📊 Modifica Visuale"}
                 </button>
             {/if}
-            <a href={`?id=${note.id}`} class="btn-cancel">❌ Annulla</a>
+            <a href={`?id=${note.id}`} class="btn-cancel">❌ {i18n.cancel}</a>
 
             {#if localTipo === "diagram" && visualMode}
                 <DiagramBuilder
