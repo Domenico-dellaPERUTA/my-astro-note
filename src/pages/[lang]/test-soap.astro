@@ -1,0 +1,34 @@
+---
+// src/pages/index.astro
+---
+
+<html>
+<body>
+  <h1>Test SOAP Interno</h1>
+  
+  <form id="soapForm">
+    <input name="name" placeholder="Nome" />
+    <button type="submit">Chiama SOAP</button>
+  </form>
+  
+  <div id="result"></div>
+
+  <script>
+    import { actions } from 'astro:actions';
+    
+    document.getElementById('soapForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target as HTMLFormElement);
+      
+      const { data, error } = await actions.callInternalSoap({
+        name: formData.get('name') as string
+      });
+      
+      if (data) {
+        document.getElementById('result')!.innerHTML = 
+          `✅ ${data.message}<br><small>${data.source}</small>`;
+      }
+    });
+  </script>
+</body>
+</html>

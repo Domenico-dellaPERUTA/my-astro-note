@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 import { getEntry } from "astro:content";
+import soap from 'soap';
 
 // --- Configurazione File Manager ---
 const BASE_DIR = process.env.WEBAPP_PATH || path.join(process.cwd(), 'public', 'WebApp');
@@ -21,6 +22,7 @@ function safePath(relative: string = '') {
 
 export const server = {
     // --- Autenticazione ---
+    /*
     login: defineAction({
         accept: 'json',
         input: z.object({
@@ -53,6 +55,73 @@ export const server = {
             }
         },
     }),
+    */
+    login: defineAction({
+        accept: 'json',
+        input: z.object({
+            username: z.string(),
+            password: z.string(),
+            token: z.string(),
+        }),
+        handler: async (input, context) => {
+            const { username, password, token } = input;
+            const { cookies } = context;
+
+            try {
+                console.log('🔐 Calling SOAP login service via soap client...');
+                
+                // Usa il client SOAP
+                const soap = await import('soap');
+                const url = 'http://localhost:4321/api/auth-soap?wsdl';
+                const client = await soap.createClientAsync(url);
+                
+                console.log('📋 Available methods:', Object.keys(client));
+                
+                // Chiama il metodo login
+                const [result] = await client.loginAsync({
+                    username,
+                    password,
+                    token
+                });
+
+                console.log('📨 SOAP Response:', result);
+
+                if (result.success) {
+                    // Set session cookie con il sessionId dal SOAP
+                    cookies.set('user_session', JSON.stringify({ 
+                        username, 
+                        role: 'admin',
+                        sessionId: result.sessionId
+                    }), {
+                        path: '/',
+                        httpOnly: true,
+                        maxAge: 60 * 60 * 24 // 1 day
+                    });
+
+                    console.log('✅ Login successful via SOAP');
+                    return { 
+                        success: true, 
+                        message: result.message 
+                    };
+                } else {
+                    console.log('❌ Login failed via SOAP:', result.message);
+                    return { 
+                        success: false, 
+                        message: result.message 
+                    };
+                }
+
+            } catch (error) {
+                console.error('❌ SOAP Action Error:', error);
+                return { 
+                    success: false, 
+                    message: 'Errore di comunicazione con il servizio di autenticazione' 
+                };
+            }
+        },
+    }),
+
+
     logout: defineAction({
         handler: async (_, context) => {
             context.cookies.delete('user_session', {
@@ -390,5 +459,37 @@ export const server = {
                 }
             }
         })
-    }
+    },
+
+    callInternalSoap: defineAction({
+            input: z.object({
+            name: z.string().default('World'),
+        }),
+        handler: async ({ name }) => {
+            try {
+                console.log('🔍 Tentativo connessione SOAP...');
+                const url = 'http://localhost:4321/api/soap?wsdl';
+                
+                console.log('📡 URL WSDL:', url);
+                const client = await soap.createClientAsync(url);
+                
+                console.log('✅ Client SOAP creato');
+                console.log('📋 Metodi disponibili:', Object.keys(client));
+                
+                const [result] = await client.sayHelloAsync({ name });
+                
+                console.log('✅ Risposta SOAP:', result);
+                
+                return {
+                message: result.message,
+                source: 'Internal SOAP Server'
+                };
+            } catch (error) {
+                console.error('❌ Errore SOAP:', error);
+                console.error('Stack:', error.stack);
+                throw new Error(`Errore SOAP: ${error.message}`);
+            }
+            }
+        })
+
 };

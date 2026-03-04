@@ -3,7 +3,7 @@ import svelte from '@astrojs/svelte';
 import node from "@astrojs/node";
 
 export default defineConfig({
-    output: "server",
+    output: "server", // Abilita SSR
     integrations: [svelte()],
     adapter: node({
         mode: 'standalone',

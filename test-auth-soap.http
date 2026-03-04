@@ -1,0 +1,24 @@
+### test-auth-soap.http
+
+### Get WSDL
+GET http://localhost:4321/api/auth-soap?wsdl HTTP/1.1
+
+###
+
+### Test Login
+POST http://localhost:4321/api/auth-soap HTTP/1.1
+Content-Type: text/xml; charset=utf-8
+SOAPAction: login
+
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <login xmlns="http://example.com/auth">
+      <username>quasar_x7@yahoo.it</username>
+      <password>Orione___</password>
+      <token>664181</token>
+    </login>
+  </soap:Body>
+</soap:Envelope>
+
+###
