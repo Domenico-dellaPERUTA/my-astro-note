@@ -28,6 +28,7 @@ const id = Astro.url.searchParams.get("id");
                     <AudioAvatarBridge
                         title={title}
                         content={content}
+                        lang={targetLang}
                         client:load
                     />
                 )
@@ -76,10 +77,13 @@ const id = Astro.url.searchParams.get("id");
     let isTranslating = false;
     let translationCache: Record<string, string> = {};
 
-    async function translateText(text: string, targetLang: string): Promise<string> {
+    async function translateText(
+        text: string,
+        targetLang: string,
+    ): Promise<string> {
         try {
             const response = await fetch(
-                `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
+                `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`,
             );
             const data = await response.json();
             return data[0].map((item: any) => item[0]).join("");
@@ -89,7 +93,10 @@ const id = Astro.url.searchParams.get("id");
         }
     }
 
-    async function translateHTML(html: string, targetLang: string): Promise<string> {
+    async function translateHTML(
+        html: string,
+        targetLang: string,
+    ): Promise<string> {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
 
@@ -118,7 +125,7 @@ const id = Astro.url.searchParams.get("id");
                     }
                     return NodeFilter.FILTER_ACCEPT;
                 },
-            }
+            },
         );
 
         const textNodes: Node[] = [];
@@ -131,7 +138,10 @@ const id = Astro.url.searchParams.get("id");
         for (const textNode of textNodes) {
             const originalText = textNode.textContent || "";
             if (originalText.trim()) {
-                const translatedText = await translateText(originalText, targetLang);
+                const translatedText = await translateText(
+                    originalText,
+                    targetLang,
+                );
                 textNode.textContent = translatedText;
             }
         }
@@ -157,10 +167,10 @@ const id = Astro.url.searchParams.get("id");
 
         isTranslating = true;
 
-        // Mostra loader
+        // Mostra loader (clessidra animata per comprensione universale)
         const loader = document.createElement("div");
         loader.className = "translation-loader";
-        loader.textContent = "Traduzione in corso...";
+        loader.innerHTML = '<span class="hourglass">⏳</span>';
         container.insertBefore(loader, container.firstChild);
 
         try {
@@ -428,15 +438,38 @@ const id = Astro.url.searchParams.get("id");
         padding: 10px;
         overflow: hidden;
     }
-    
+
     .translation-loader {
-        background-color: #fff3cd;
-        border: 1px solid #ffc107;
-        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
         margin-bottom: 15px;
-        border-radius: 5px;
-        text-align: center;
-        font-weight: bold;
-        color: #856404;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+    }
+
+    .hourglass {
+        font-size: 3rem;
+        animation: flip 2s infinite linear;
+        display: inline-block;
+    }
+
+    @keyframes flip {
+        0% {
+            transform: rotate(0deg);
+        }
+        40% {
+            transform: rotate(180deg);
+        }
+        50% {
+            transform: rotate(180deg);
+        }
+        90% {
+            transform: rotate(360deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
 </style>
