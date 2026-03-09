@@ -1,6 +1,7 @@
 <script lang="ts">
     import AvatarParlante from "./AvatarParlante.svelte";
     import { onMount } from "svelte";
+    import { actions } from "astro:actions";
 
     let {
         title,
@@ -236,10 +237,19 @@
             }
 
             const chunk = googleChunkQueue.shift()!;
-            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=${targetLang}&client=tw-ob`;
 
             try {
-                googleAudio = new Audio(url);
+                // Usa l'azione server-side per bypassare il blocco ORB del browser
+                const result = await actions.proxyTTS({
+                    text: chunk,
+                    lang: targetLang,
+                });
+
+                if (!result.data || !result.data.success) {
+                    throw new Error(result.data?.error || "Proxy TTS failed");
+                }
+
+                googleAudio = new Audio(result.data.audio);
                 googleAudio.volume = 1.0;
 
                 await new Promise<void>((resolve, reject) => {

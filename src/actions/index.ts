@@ -390,5 +390,43 @@ export const server = {
                 }
             }
         })
-    }
+    },
+
+    // --- Servizi Esterni ---
+    proxyTTS: defineAction({
+        accept: 'json',
+        input: z.object({
+            text: z.string(),
+            lang: z.string(),
+        }),
+        handler: async (input) => {
+            const { text, lang } = input;
+            // Usa client=tw-ob che è solitamente più stabile per scopi non-interattivi
+            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Referer': 'https://translate.google.com/',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Google TTS respondio con status: ${response.status}`);
+                }
+
+                const buffer = await response.arrayBuffer();
+                const base64 = Buffer.from(buffer).toString('base64');
+
+                return {
+                    success: true,
+                    audio: `data:audio/mpeg;base64,${base64}`
+                };
+            } catch (error) {
+                console.error('Action Error (proxyTTS):', error);
+                return { success: false, error: 'Failed to fetch audio from Google' };
+            }
+        }
+    })
 };
