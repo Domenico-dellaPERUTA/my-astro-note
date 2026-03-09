@@ -1,9 +1,8 @@
 ---
-// src/layouts/NoteLayout.astro
-
 import { renderMarkdown } from "../lib/markdown";
 import Diagramma from "../components/Diagramma.svelte";
 import AudioAvatarBridge from "../components/AudioAvatarBridge.svelte";
+import { getEntry } from "astro:content";
 
 interface Props {
     title: string;
@@ -16,6 +15,10 @@ interface Props {
 const { title, content, type, userRole, targetLang = "original" } = Astro.props;
 const html = type !== "diagram" ? await renderMarkdown(content) : "";
 const id = Astro.url.searchParams.get("id");
+
+// Recupera la lingua di default per passarla al bridge e usarla nel client
+const siteConfig = await getEntry("config", "site");
+const defaultLang = siteConfig?.data?.defaultLang || "it";
 ---
 
 <div class="annotazione">
@@ -29,6 +32,7 @@ const id = Astro.url.searchParams.get("id");
                         title={title}
                         content={content}
                         lang={targetLang}
+                        defaultLang={defaultLang}
                         client:load
                     />
                 )
@@ -59,6 +63,7 @@ const id = Astro.url.searchParams.get("id");
                     class="testo"
                     data-content={content}
                     data-target-lang={targetLang}
+                    data-default-lang={defaultLang}
                 >
                     <Fragment set:html={html} />
                 </div>
@@ -77,16 +82,21 @@ const id = Astro.url.searchParams.get("id");
     let isTranslating = false;
     let translationCache: Record<string, string> = {};
 
+    import { actions } from "astro:actions";
+
     async function translateText(
         text: string,
         targetLang: string,
     ): Promise<string> {
         try {
-            const response = await fetch(
-                `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`,
-            );
-            const data = await response.json();
-            return data[0].map((item: any) => item[0]).join("");
+            const result = await actions.proxyTranslate({
+                text,
+                targetLang,
+            });
+            if (result.data && result.data.success) {
+                return result.data.translatedText || text;
+            }
+            throw new Error(result.data?.error || "Translation failed");
         } catch (error) {
             console.error("Translation error:", error);
             return text;
@@ -157,8 +167,9 @@ const id = Astro.url.searchParams.get("id");
         // Se la lingua è già quella corrente, non fare nulla
         if (currentLang === targetLang) return;
 
-        // Se torna all'originale
-        if (targetLang === "original" || targetLang === "it") {
+        // Se torna all'originale o alla lingua di default
+        const defaultLang = container.getAttribute("data-default-lang") || "it";
+        if (targetLang === "original" || targetLang === defaultLang) {
             container.innerHTML = originalHTML;
             currentLang = "original";
             await mountInteractiveComponents();
@@ -295,9 +306,14 @@ const id = Astro.url.searchParams.get("id");
         // Monta i componenti interattivi
         await mountInteractiveComponents();
 
-        // Applica la traduzione iniziale se specificata
+        // Applica la traduzione iniziale se specificata e diversa dalla default
         const targetLang = container.getAttribute("data-target-lang");
-        if (targetLang && targetLang !== "original" && targetLang !== "it") {
+        const defaultLang = container.getAttribute("data-default-lang") || "it";
+        if (
+            targetLang &&
+            targetLang !== "original" &&
+            targetLang !== defaultLang
+        ) {
             await applyTranslation(targetLang);
         }
 

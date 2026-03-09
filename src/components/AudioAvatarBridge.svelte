@@ -6,11 +6,13 @@
     let {
         title,
         content,
-        lang = "it",
+        lang = "original",
+        defaultLang = "it",
     } = $props<{
         title: string;
         content: string;
         lang?: string;
+        defaultLang?: string;
     }>();
 
     // --- Stato reattivo ---
@@ -18,7 +20,7 @@
     let isSpeaking = $state(false);
     let showAvatar = $state(false);
     let avatarControlsOpen = $state(false);
-    let currentLang = $state("it");
+    let currentLang = $state("original");
     let translating = $state(false);
 
     // --- Risorse audio ---
@@ -30,8 +32,10 @@
     let isPlayingChunks = $state(false);
 
     // --- Derivato ---
-    let isItalian = $derived(
-        currentLang === "it" || currentLang === "original" || !currentLang,
+    let isDefaultLang = $derived(
+        currentLang === defaultLang ||
+            currentLang === "original" ||
+            !currentLang,
     );
 
     // --- Caricamento voci e osservazione lingua ---
@@ -160,8 +164,8 @@
 
     // === ESTRAZIONE TESTO DA LEGGERE ===
     function getTextToRead(): string {
-        if (isItalian) {
-            // Modalità italiana: usa il contenuto originale
+        if (isDefaultLang) {
+            // Modalità lingua predefinita: usa il contenuto originale
             const cleanText = cleanMarkdown(content);
             return `${title}. ${cleanText}`;
         } else {
@@ -314,10 +318,17 @@
                 ru: "ru-RU",
                 ar: "ar-SA",
                 hi: "hi-IN",
-                original: "it-IT",
             };
-            utterance.lang =
-                langMap[langCode] || `${langCode}-${langCode.toUpperCase()}`;
+
+            if (langCode === "original") {
+                utterance.lang =
+                    langMap[defaultLang] ||
+                    `${defaultLang}-${defaultLang.toUpperCase()}`;
+            } else {
+                utterance.lang =
+                    langMap[langCode] ||
+                    `${langCode}-${langCode.toUpperCase()}`;
+            }
 
             // Seleziona voce
             const currentVoices = window.speechSynthesis.getVoices();
@@ -325,34 +336,32 @@
                 currentVoices.length > 0 ? currentVoices : voices;
 
             if (withAvatar) {
-                // Voce italiana preferita (come prima)
+                // Cerchiamo una voce premium per la lingua di default
+                // Cerchiamo voci che contengano "Premium", "Enhanced", "Migliorata" o nomi noti di alta qualità
+                const langPrefix =
+                    langCode === "original" ? defaultLang : langCode;
+
                 const preferredVoice =
                     voicesToUse.find(
                         (v) =>
-                            v.lang.startsWith("it") && v.name.includes("Emma"),
+                            v.lang.startsWith(langPrefix) &&
+                            (v.name.includes("Enhanced") ||
+                                v.name.includes("Premium") ||
+                                v.name.includes("Migliorata")),
                     ) ||
                     voicesToUse.find(
                         (v) =>
-                            v.lang.startsWith("it") &&
-                            v.name.includes("Federica"),
+                            v.lang.startsWith(langPrefix) &&
+                            (v.name.includes("Federica") ||
+                                v.name.includes("Emma") ||
+                                v.name.includes("Alice")),
                     ) ||
                     voicesToUse.find(
                         (v) =>
-                            v.lang.startsWith("it") &&
-                            (v.name.includes("Alice") ||
-                                v.name.includes("Elsa")),
-                    ) ||
-                    voicesToUse.find(
-                        (v) =>
-                            v.lang.startsWith("it") &&
-                            (v.name.includes("Luca") ||
-                                v.name.includes("Cosimo")),
-                    ) ||
-                    voicesToUse.find(
-                        (v) =>
-                            v.lang.startsWith("it") &&
+                            v.lang.startsWith(langPrefix) &&
                             !v.name.includes("Google"),
-                    );
+                    ) ||
+                    voicesToUse.find((v) => v.lang.startsWith(langPrefix));
 
                 if (preferredVoice) {
                     utterance.voice = preferredVoice;
@@ -435,10 +444,10 @@
         // Imposta stato "in riproduzione"
         speaking = true;
 
-        if (isItalian) {
-            // === MODALITÀ ITALIANA: speechSynthesis + Avatar ===
+        if (isDefaultLang) {
+            // === MODALITÀ LINGUA DEFAULT: speechSynthesis + Avatar ===
             showAvatar = true;
-            speakWithSynthesis(textToRead, "it", true);
+            speakWithSynthesis(textToRead, "original", true);
         } else {
             // === MODALITÀ TRADUZIONE: Google TTS, senza avatar ===
             showAvatar = false;
@@ -458,7 +467,7 @@
             onclick={toggleSpeech}
             title={speaking
                 ? "Ferma lettura"
-                : isItalian
+                : isDefaultLang
                   ? "Ascolta nota"
                   : "Listen (Google TTS)"}
         >

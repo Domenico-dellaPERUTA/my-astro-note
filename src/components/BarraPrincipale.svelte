@@ -90,6 +90,13 @@
       >
         📁 {file}
       </a>
+      <a
+        href={`/${currentLang}/admin/settings`}
+        class="admin-link"
+        title="Impostazioni Sito"
+      >
+        ⚙️
+      </a>
     {/if}
 
     <LanguagePicker {currentLang} />

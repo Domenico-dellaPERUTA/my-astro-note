@@ -47,6 +47,7 @@ export const collections = {
             cameraY: z.number().optional(),
             cameraZ: z.number().optional(),
             cameraTargetY: z.number().optional(),
+            defaultLang: z.string().optional(),
         }),
     }),
 };

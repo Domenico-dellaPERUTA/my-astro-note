@@ -1,0 +1,97 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import SiteSettings from "../../../components/SiteSettings.svelte";
+import BarraPrincipale from "../../../components/BarraPrincipale.svelte";
+import Messaggio from "../../../components/Messaggio.svelte";
+import { isAdmin } from "../../../lib/auth";
+import { useTranslations } from "../../../i18n/utils";
+import { ui } from "../../../i18n/ui";
+
+const { lang } = Astro.params;
+const currentLang = (lang as keyof typeof ui) || "it";
+const i18n = useTranslations(currentLang);
+
+// Controllo sicurezza lato server
+if (!isAdmin(Astro.cookies)) {
+    return Astro.redirect(`/${currentLang}/login`);
+}
+
+export function getStaticPaths() {
+    return [
+        { params: { lang: "en" } },
+        { params: { lang: "it" } },
+        { params: { lang: "es" } },
+        { params: { lang: "fr" } },
+        { params: { lang: "de" } },
+        { params: { lang: "zh" } },
+        { params: { lang: "ja" } },
+        { params: { lang: "ar" } },
+        { params: { lang: "ru" } },
+    ];
+}
+---
+
+<Layout lang={currentLang}>
+    <section>
+        <BarraPrincipale
+            titolo="Impostazioni Sito"
+            userRole="admin"
+            currentLang={currentLang}
+            file={i18n("main.button.file")}
+            client:load
+        />
+    </section>
+
+    <main class="admin-container">
+        <header class="admin-header">
+            <a href={`/${currentLang}/`} class="back-link"
+                >{i18n("admin.backLink")}</a
+            >
+            <h2>Configurazione Generale</h2>
+            <p>Gestisci le impostazioni globali dell'applicazione.</p>
+        </header>
+
+        <section class="admin-content">
+            <Messaggio client:load />
+            <SiteSettings client:load />
+        </section>
+    </main>
+</Layout>
+
+<style>
+    .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .admin-header {
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #333;
+        padding-bottom: 1rem;
+    }
+
+    .back-link {
+        color: var(--highlight);
+        text-decoration: none;
+        font-weight: bold;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 2rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    p {
+        color: #666;
+        font-style: italic;
+    }
+
+    .admin-content {
+        margin-top: 2rem;
+    }
+</style>

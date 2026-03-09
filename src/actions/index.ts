@@ -377,6 +377,39 @@ export const server = {
             }
         }),
 
+        getSiteConfig: defineAction({
+            handler: async () => {
+                try {
+                    const config = await getEntry("config", "site");
+                    if (!config) throw new Error("Configurazione non trovata");
+                    return config.data;
+                } catch (error) {
+                    console.error('Action Error (getSiteConfig):', error);
+                    // Restituisci un default se non trovato invece di crashare
+                    return { defaultLang: "it" };
+                }
+            }
+        }),
+
+        updateSiteConfig: defineAction({
+            accept: 'json',
+            input: z.object({
+                defaultLang: z.string(),
+            }),
+            handler: async (input, context) => {
+                if (!isAdmin(context.cookies)) throw new Error('Operazione non autorizzata');
+                try {
+                    const configPath = path.join(process.cwd(), 'src', 'content', 'config', 'site.md');
+                    const content = `---\ndefaultLang: "${input.defaultLang}"\n---\n\n# Site Configuration\nThis file stores general site settings.\n`;
+                    await fs.writeFile(configPath, content);
+                    return { success: true };
+                } catch (error) {
+                    console.error('Action Error (updateSiteConfig):', error);
+                    throw new Error('Errore nel salvataggio della configurazione sito');
+                }
+            }
+        }),
+
         listModels: defineAction({
             handler: async () => {
                 try {
@@ -393,6 +426,43 @@ export const server = {
     },
 
     // --- Servizi Esterni ---
+    proxyTranslate: defineAction({
+        accept: 'json',
+        input: z.object({
+            text: z.string(),
+            targetLang: z.string(),
+        }),
+        handler: async (input) => {
+            const { text, targetLang } = input;
+
+            // Determina la lingua di origine (defaultLang)
+            let sourceLang = "it";
+            try {
+                const config = await getEntry("config", "site");
+                if (config && config.data.defaultLang) {
+                    sourceLang = config.data.defaultLang;
+                }
+            } catch (e) {
+                console.warn("[proxyTranslate] Could not read site config, falling back to 'it'");
+            }
+
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Google Translate error: ${response.status}`);
+
+                const data = await response.json();
+                const translatedText = data[0].map((item: any) => item[0]).join("");
+
+                return { success: true, translatedText };
+            } catch (error) {
+                console.error('Action Error (proxyTranslate):', error);
+                return { success: false, error: 'Translation failed' };
+            }
+        }
+    }),
+
     proxyTTS: defineAction({
         accept: 'json',
         input: z.object({
@@ -401,6 +471,8 @@ export const server = {
         }),
         handler: async (input) => {
             const { text, lang } = input;
+            console.log(`[proxyTTS] Request for lang: ${lang}, text length: ${text.length}`);
+
             // Usa client=tw-ob che è solitamente più stabile per scopi non-interattivi
             const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
 

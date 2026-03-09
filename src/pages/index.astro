@@ -1,5 +1,11 @@
 ---
 // src/pages/index.astro
+import { getEntry } from "astro:content";
+
+// Leggi la lingua predefinita dalla configurazione
+const siteConfig = await getEntry("config", "site");
+const defaultLang = siteConfig?.data?.defaultLang || "it";
+
 // Reindirizzamento alla lingua predefinita
-return Astro.redirect("/it/");
+return Astro.redirect(`/${defaultLang}/`);
 ---
