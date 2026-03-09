@@ -2,6 +2,32 @@
     import { actions } from "astro:actions";
     import { onMount } from "svelte";
 
+    let {
+        labels = {
+            cardTitle: "Configurazione Sito",
+            loading: "Caricamento in corso...",
+            defaultLangLabel: "Lingua Predefinita (Redirect iniziale):",
+            saveButton: "Salva Configurazione",
+            savingButton: "Salvataggio...",
+            savingMessage: "Salvataggio in corso...",
+            saveSuccess: "Configurazione salvata con successo!",
+            saveError: "Errore durante il salvataggio.",
+            connectionError: "Errore di connessione.",
+        },
+    } = $props<{
+        labels: {
+            cardTitle: string;
+            loading: string;
+            defaultLangLabel: string;
+            saveButton: string;
+            savingButton: string;
+            savingMessage: string;
+            saveSuccess: string;
+            saveError: string;
+            connectionError: string;
+        };
+    }>();
+
     let languages = [
         { code: "it", icon: "🇮🇹", label: "Italiano" },
         { code: "en", icon: "🇬🇧", label: "English" },
@@ -35,21 +61,21 @@
 
     async function saveSettings() {
         saving = true;
-        message = "Salvataggio in corso...";
+        message = labels.savingMessage;
         messageType = "info";
         try {
             const result = await actions.config.updateSiteConfig({
                 defaultLang,
             });
             if (result.data?.success) {
-                message = "Configurazione salvata con successo!";
+                message = labels.saveSuccess;
                 messageType = "success";
             } else {
-                message = `Errore: ${result.error?.message || "Errore durante il salvataggio."}`;
+                message = `${labels.saveError} ${result.error?.message || ""}`;
                 messageType = "error";
             }
         } catch (e) {
-            message = "Errore di connessione.";
+            message = labels.connectionError;
             messageType = "error";
             console.error(e);
         } finally {
@@ -59,15 +85,13 @@
 </script>
 
 <div class="settings-card">
-    <h3>Configurazione Sito</h3>
+    <h3>{labels.cardTitle}</h3>
 
     {#if loading}
-        <div class="loader">Caricamento in corso...</div>
+        <div class="loader">{labels.loading}</div>
     {:else}
         <div class="setting-item">
-            <span class="group-label"
-                >Lingua Predefinita (Redirect iniziale):</span
-            >
+            <span class="group-label">{labels.defaultLangLabel}</span>
             <div class="radio-group">
                 {#each languages as lang}
                     <label class="radio-label">
@@ -86,7 +110,7 @@
 
         <div class="actions">
             <button class="save-btn" onclick={saveSettings} disabled={saving}>
-                {saving ? "Salvataggio..." : "Salva Configurazione"}
+                {saving ? labels.savingButton : labels.saveButton}
             </button>
         </div>
 

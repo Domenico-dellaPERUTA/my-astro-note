@@ -11,6 +11,18 @@ const { lang } = Astro.params;
 const currentLang = (lang as keyof typeof ui) || "it";
 const i18n = useTranslations(currentLang);
 
+const siteSettingsLabels = {
+    cardTitle: i18n("settings.cardTitle"),
+    loading: i18n("settings.loading"),
+    defaultLangLabel: i18n("settings.defaultLangLabel"),
+    saveButton: i18n("settings.saveButton"),
+    savingButton: i18n("settings.savingButton"),
+    savingMessage: i18n("settings.savingMessage"),
+    saveSuccess: i18n("settings.saveSuccess"),
+    saveError: i18n("settings.saveError"),
+    connectionError: i18n("settings.connectionError"),
+};
+
 // Controllo sicurezza lato server
 if (!isAdmin(Astro.cookies)) {
     return Astro.redirect(`/${currentLang}/login`);
@@ -34,7 +46,7 @@ export function getStaticPaths() {
 <Layout lang={currentLang}>
     <section>
         <BarraPrincipale
-            titolo="Impostazioni Sito"
+            titolo={i18n("settings.title")}
             userRole="admin"
             currentLang={currentLang}
             file={i18n("main.button.file")}
@@ -47,13 +59,13 @@ export function getStaticPaths() {
             <a href={`/${currentLang}/`} class="back-link"
                 >{i18n("admin.backLink")}</a
             >
-            <h2>Configurazione Generale</h2>
-            <p>Gestisci le impostazioni globali dell'applicazione.</p>
+            <h2>{i18n("settings.subtitle")}</h2>
+            <p>{i18n("settings.description")}</p>
         </header>
 
         <section class="admin-content">
             <Messaggio client:load />
-            <SiteSettings client:load />
+            <SiteSettings labels={siteSettingsLabels} client:load />
         </section>
     </main>
 </Layout>

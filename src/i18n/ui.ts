@@ -45,6 +45,19 @@ export const ui = {
         "editor.help": "Markdown help",
         "editor.save": "Salva",
         "editor.cancel": "Annulla",
+        /* view settings */
+        "settings.title": "Impostazioni Sito",
+        "settings.subtitle": "Configurazione Generale",
+        "settings.description": "Gestisci le impostazioni globali dell'applicazione.",
+        "settings.cardTitle": "Configurazione Sito",
+        "settings.loading": "Caricamento in corso...",
+        "settings.defaultLangLabel": "Lingua Predefinita (Redirect iniziale):",
+        "settings.saveButton": "Salva Configurazione",
+        "settings.savingButton": "Salvataggio...",
+        "settings.savingMessage": "Salvataggio in corso...",
+        "settings.saveSuccess": "Configurazione salvata con successo!",
+        "settings.saveError": "Errore durante il salvataggio.",
+        "settings.connectionError": "Errore di connessione.",
     },
     en: {
         /* view main */
@@ -83,6 +96,19 @@ export const ui = {
         "editor.help": "Markdown help",
         "editor.save": "Save",
         "editor.cancel": "Cancel",
+        /* view settings */
+        "settings.title": "Site Settings",
+        "settings.subtitle": "General Configuration",
+        "settings.description": "Manage global application settings.",
+        "settings.cardTitle": "Site Configuration",
+        "settings.loading": "Loading...",
+        "settings.defaultLangLabel": "Default Language (Initial redirect):",
+        "settings.saveButton": "Save Configuration",
+        "settings.savingButton": "Saving...",
+        "settings.savingMessage": "Saving in progress...",
+        "settings.saveSuccess": "Configuration saved successfully!",
+        "settings.saveError": "Error during saving.",
+        "settings.connectionError": "Connection error.",
     },
     es: {
         /* view main */
@@ -102,7 +128,7 @@ export const ui = {
         "login.token": "Token (OTP)",
         "login.backLink": "← Volver a las Notas",
         "login.message.startingLogin": "Iniciando sesión...",
-        "login.message.error": "Credenciales no válidas",  
+        "login.message.error": "Credenciales no válidas",
         "login.message.success": "¡Inicio de sesión exitoso! Redirigiendo...",
         "login.message.errorConnection": "Error de conexión. Por favor, inténtalo de nuevo más tarde.",
         /* view admin */
@@ -111,17 +137,22 @@ export const ui = {
         "admin.subtitle": "Área Reservada: Gestión de Activos",
         "admin.description": "Aquí puedes subir imágenes y gestionar documentos para tus notas.",
         /* view editor */
-        "editor.title": "Título:",
-        "editor.text": "Texto",
-        "editor.type": "Tipo:",
-        "editor.type.note": "Nota",
-        "editor.type.quiz": "Quiz",
-        "editor.type.slide": "Diapositiva",
-        "editor.type.diagram": "Diagrama",
-        "editor.help": "Ayuda de Markdown",
         "editor.save": "Guardar",
         "editor.cancel": "Cancelar",
-    },     
+        /* view settings */
+        "settings.title": "Configuraciones del Sitio",
+        "settings.subtitle": "Configuración General",
+        "settings.description": "Gestionar la configuración global de la aplicación.",
+        "settings.cardTitle": "Configuración del Sitio",
+        "settings.loading": "Cargando...",
+        "settings.defaultLangLabel": "Idioma Predeterminato (Redirección inicial):",
+        "settings.saveButton": "Guardar Configurazione",
+        "settings.savingButton": "Guardando...",
+        "settings.savingMessage": "Guardado en curso...",
+        "settings.saveSuccess": "¡Configuración guardada con éxito!",
+        "settings.saveError": "Error al guardar.",
+        "settings.connectionError": "Error de conexión.",
+    },
     fr: {
         /* view main */
         "main.title": "Notes",
@@ -159,6 +190,19 @@ export const ui = {
         "editor.help": "Aide Markdown",
         "editor.save": "Enregistrer",
         "editor.cancel": "Annuler",
+        /* view settings */
+        "settings.title": "Paramètres du Site",
+        "settings.subtitle": "Configuration Générale",
+        "settings.description": "Gérer les paramètres globaux de l'application.",
+        "settings.cardTitle": "Configuration du Site",
+        "settings.loading": "Chargement...",
+        "settings.defaultLangLabel": "Langue par Défaut (Redirection initiale) :",
+        "settings.saveButton": "Enregistrer la Configuration",
+        "settings.savingButton": "Enregistrement...",
+        "settings.savingMessage": "Enregistrement en cours...",
+        "settings.saveSuccess": "Configuration enregistrée avec succès !",
+        "settings.saveError": "Erreur lors de l'enregistrement.",
+        "settings.connectionError": "Erreur de connexion.",
     },
     de: {
         /* view main */
@@ -197,6 +241,19 @@ export const ui = {
         "editor.help": "Markdown-Hilfe",
         "editor.save": "Speichern",
         "editor.cancel": "Abbrechen",
+        /* view settings */
+        "settings.title": "Website-Einstellungen",
+        "settings.subtitle": "Allgemeine Konfiguration",
+        "settings.description": "Globale Anwendungseinstellungen verwalten.",
+        "settings.cardTitle": "Website-Konfiguration",
+        "settings.loading": "Laden...",
+        "settings.defaultLangLabel": "Standardsprache (Anfängliche Weiterleitung):",
+        "settings.saveButton": "Konfiguration speichern",
+        "settings.savingButton": "Speichern...",
+        "settings.savingMessage": "Speichervorgang läuft...",
+        "settings.saveSuccess": "Konfiguration erfolgreich gespeichert!",
+        "settings.saveError": "Fehler beim Speichern.",
+        "settings.connectionError": "Verbindungsfehler.",
     },
     zh: {
         /* view main */
@@ -222,7 +279,7 @@ export const ui = {
         /* view admin */
         "admin.backLink": "← 返回笔记",
         "admin.title": "文件和媒体管理",
-        "admin.subtitle": "保留区域：资产管理", 
+        "admin.subtitle": "保留区域：资产管理",
         "admin.description": "在这里，您可以上传图像并管理您的笔记的文档。",
         /* view editor */
         "editor.title": "标题:",
@@ -235,6 +292,19 @@ export const ui = {
         "editor.help": "Markdown帮助",
         "editor.save": "保存",
         "editor.cancel": "取消",
+        /* view settings */
+        "settings.title": "网站设置",
+        "settings.subtitle": "通用配置",
+        "settings.description": "管理全局应用设置。",
+        "settings.cardTitle": "网站配置",
+        "settings.loading": "加载中...",
+        "settings.defaultLangLabel": "默认语言（初始重定向）：",
+        "settings.saveButton": "保存配置",
+        "settings.savingButton": "保存中...",
+        "settings.savingMessage": "正在保存...",
+        "settings.saveSuccess": "配置保存成功！",
+        "settings.saveError": "保存时出错。",
+        "settings.connectionError": "连接错误。",
     },
     ja: {
         /* view main */
@@ -273,6 +343,19 @@ export const ui = {
         "editor.help": "Markdownヘルプ",
         "editor.save": "保存",
         "editor.cancel": "キャンセル",
+        /* view settings */
+        "settings.title": "サイト設定",
+        "settings.subtitle": "一般設定",
+        "settings.description": "グローバルなアプリケーション設定を管理します。",
+        "settings.cardTitle": "サイト構成",
+        "settings.loading": "読み込み中...",
+        "settings.defaultLangLabel": "デフォルト言語 (初期リダイレクト):",
+        "settings.saveButton": "設定を保存",
+        "settings.savingButton": "保存中...",
+        "settings.savingMessage": "保存しています...",
+        "settings.saveSuccess": "設定が正常に保存されました！",
+        "settings.saveError": "保存中にエラーが発生しました。",
+        "settings.connectionError": "接続エラーが発生しました。",
     },
     ar: {
         /* view main */
@@ -311,6 +394,19 @@ export const ui = {
         "editor.help": "مساعدة Markdown",
         "editor.save": "حفظ",
         "editor.cancel": "إلغاء",
+        /* view settings */
+        "settings.title": "إعدادات الموقع",
+        "settings.subtitle": "التكوين العام",
+        "settings.description": "إدارة إعدادات التطبيق العامة.",
+        "settings.cardTitle": "تكوين الموقع",
+        "settings.loading": "جارٍ التحميل...",
+        "settings.defaultLangLabel": "اللغة الافتراضية (إعادة التوجيه الأولية):",
+        "settings.saveButton": "حفظ التكوين",
+        "settings.savingButton": "جارٍ الحفظ...",
+        "settings.savingMessage": "جارٍ الحفظ الآن...",
+        "settings.saveSuccess": "تم حفظ التكوين بنجاح!",
+        "settings.saveError": "خطأ أثناء الحفظ.",
+        "settings.connectionError": "خطأ في الاتصال.",
     },
     ru: {
         /* view main */
@@ -349,6 +445,19 @@ export const ui = {
         "editor.help": "Помощь по Markdown",
         "editor.save": "Сохранить",
         "editor.cancel": "Отмена",
+        /* view settings */
+        "settings.title": "Настройки сайта",
+        "settings.subtitle": "Общая конфигурация",
+        "settings.description": "Управление глобальными настройками приложения.",
+        "settings.cardTitle": "Конфигурация сайта",
+        "settings.loading": "Загрузка...",
+        "settings.defaultLangLabel": "Язык по умолчанию (начальное перенаправление):",
+        "settings.saveButton": "Сохранить конфигурацию",
+        "settings.savingButton": "Сохранение...",
+        "settings.savingMessage": "Сохранение в процессе...",
+        "settings.saveSuccess": "Конфигурация успешно сохранена!",
+        "settings.saveError": "Ошибка при сохранении.",
+        "settings.connectionError": "Ошибка соединения.",
     },
 
 } as const;
