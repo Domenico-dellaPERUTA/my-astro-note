@@ -3,6 +3,7 @@ import { renderMarkdown } from "../lib/markdown";
 import Diagramma from "../components/Diagramma.svelte";
 import AudioAvatarBridge from "../components/AudioAvatarBridge.svelte";
 import { getEntry } from "astro:content";
+import { getRawSiteConfig } from "../lib/siteConfig";
 
 interface Props {
     title: string;
@@ -16,9 +17,9 @@ const { title, content, type, userRole, targetLang = "original" } = Astro.props;
 const html = type !== "diagram" ? await renderMarkdown(content) : "";
 const id = Astro.url.searchParams.get("id");
 
-// Recupera la lingua di default per passarla al bridge e usarla nel client
-const siteConfig = await getEntry("config", "site");
-const defaultLang = siteConfig?.data?.defaultLang || "it";
+// Recupera la lingua di default per passarla al bridge e usarla nel client leggendo direttamente il file
+const config = await getRawSiteConfig();
+const defaultLang = config.defaultLang || "it";
 ---
 
 <div class="annotazione">
@@ -89,6 +90,10 @@ const defaultLang = siteConfig?.data?.defaultLang || "it";
         targetLang: string,
     ): Promise<string> {
         try {
+            console.log(
+                `[translateText] Translating to ${targetLang}:`,
+                text.substring(0, 50),
+            );
             const result = await actions.proxyTranslate({
                 text,
                 targetLang,
@@ -96,6 +101,10 @@ const defaultLang = siteConfig?.data?.defaultLang || "it";
             if (result.data && result.data.success) {
                 return result.data.translatedText || text;
             }
+            console.error(
+                `[translateText] ProxyTranslate error response:`,
+                result.data,
+            );
             throw new Error(result.data?.error || "Translation failed");
         } catch (error) {
             console.error("Translation error:", error);
@@ -144,10 +153,17 @@ const defaultLang = siteConfig?.data?.defaultLang || "it";
             textNodes.push(node);
         }
 
+        console.log(
+            `[translateHTML] Found ${textNodes.length} translatable text nodes.`,
+        );
+
         // Traduci ogni nodo di testo
-        for (const textNode of textNodes) {
+        for (const [index, textNode] of textNodes.entries()) {
             const originalText = textNode.textContent || "";
             if (originalText.trim()) {
+                console.log(
+                    `[translateHTML] Translating node ${index + 1}/${textNodes.length} (length: ${originalText.length})`,
+                );
                 const translatedText = await translateText(
                     originalText,
                     targetLang,
@@ -156,10 +172,14 @@ const defaultLang = siteConfig?.data?.defaultLang || "it";
             }
         }
 
+        console.log(`[translateHTML] Done translating all nodes.`);
         return doc.body.innerHTML;
     }
 
     async function applyTranslation(targetLang: string) {
+        console.log(
+            `[NoteLayout applyTranslation] Requesting translation to: ${targetLang}, currentLang: ${currentLang}`,
+        );
         const container = document.getElementById("testo-renderizzato");
         if (!container) return;
         if (isTranslating) return;
@@ -170,6 +190,9 @@ const defaultLang = siteConfig?.data?.defaultLang || "it";
         // Se torna all'originale o alla lingua di default
         const defaultLang = container.getAttribute("data-default-lang") || "it";
         if (targetLang === "original" || targetLang === defaultLang) {
+            console.log(
+                `[NoteLayout applyTranslation] targetLang ("${targetLang}") is default ("${defaultLang}") or "original". Reverting to originalHTML.`,
+            );
             container.innerHTML = originalHTML;
             currentLang = "original";
             await mountInteractiveComponents();
@@ -309,12 +332,29 @@ const defaultLang = siteConfig?.data?.defaultLang || "it";
         // Applica la traduzione iniziale se specificata e diversa dalla default
         const targetLang = container.getAttribute("data-target-lang");
         const defaultLang = container.getAttribute("data-default-lang") || "it";
+
+        console.log(`[NoteLayout INIT] Starting initialization.`);
+        console.log(
+            `[NoteLayout INIT] container data-target-lang: "${targetLang}"`,
+        );
+        console.log(
+            `[NoteLayout INIT] container data-default-lang: "${defaultLang}"`,
+        );
+        console.log(
+            `[NoteLayout INIT] currentLang (js variable): "${currentLang}"`,
+        );
+
         if (
             targetLang &&
             targetLang !== "original" &&
             targetLang !== defaultLang
         ) {
+            console.log(
+                `[NoteLayout INIT] Condition met for initial translation to: ${targetLang}`,
+            );
             await applyTranslation(targetLang);
+        } else {
+            console.log(`[NoteLayout INIT] Skipping initial translation.`);
         }
 
         // Osserva i cambiamenti dell'attributo data-target-lang
@@ -325,6 +365,9 @@ const defaultLang = siteConfig?.data?.defaultLang || "it";
                     mutation.attributeName === "data-target-lang"
                 ) {
                     const newLang = container.getAttribute("data-target-lang");
+                    console.log(
+                        `[NoteLayout OBSERVER] data-target-lang changed to: "${newLang}"`,
+                    );
                     if (newLang) {
                         await applyTranslation(newLang);
                     }

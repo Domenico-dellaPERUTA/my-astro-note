@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 import { getEntry } from "astro:content";
+import { getRawSiteConfig } from "../lib/siteConfig";
 
 // --- Configurazione File Manager ---
 const BASE_DIR = process.env.WEBAPP_PATH || path.join(process.cwd(), 'public', 'WebApp');
@@ -379,15 +380,7 @@ export const server = {
 
         getSiteConfig: defineAction({
             handler: async () => {
-                try {
-                    const config = await getEntry("config", "site");
-                    if (!config) throw new Error("Configurazione non trovata");
-                    return config.data;
-                } catch (error) {
-                    console.error('Action Error (getSiteConfig):', error);
-                    // Restituisci un default se non trovato invece di crashare
-                    return { defaultLang: "it" };
-                }
+                return await getRawSiteConfig();
             }
         }),
 
@@ -435,21 +428,31 @@ export const server = {
         handler: async (input) => {
             const { text, targetLang } = input;
 
-            // Determina la lingua di origine (defaultLang)
-            let sourceLang = "it";
-            try {
-                const config = await getEntry("config", "site");
-                if (config && config.data.defaultLang) {
-                    sourceLang = config.data.defaultLang;
-                }
-            } catch (e) {
-                console.warn("[proxyTranslate] Could not read site config, falling back to 'it'");
-            }
+            // Determina la lingua di origine (defaultLang) leggendo direttamente il file
+            const config = await getRawSiteConfig();
+            const sourceLang = config.defaultLang || "it";
 
-            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+            console.log(`[proxyTranslate] Translating from ${sourceLang} to ${targetLang}. Text length: ${text.length}`);
+
+            const url = `https://translate.googleapis.com/translate_a/single`;
+            const params = new URLSearchParams({
+                client: 'gtx',
+                sl: sourceLang,
+                tl: targetLang,
+                dt: 't',
+                q: text,
+            });
 
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Referer': 'https://translate.google.com/'
+                    },
+                    body: params.toString()
+                });
                 if (!response.ok) throw new Error(`Google Translate error: ${response.status}`);
 
                 const data = await response.json();

@@ -16,6 +16,13 @@ const { lang } = Astro.params;
 const currentLang = (lang as keyof typeof ui) || "it";
 const i18n = useTranslations(currentLang);
 
+console.log(
+    `[SSR index.astro] Incoming request for URL: ${Astro.url.pathname}`,
+);
+console.log(
+    `[SSR index.astro] Astro.params.lang: "${lang}", mapped currentLang: "${currentLang}"`,
+);
+
 // 1. Ripristino stato se si torna dalla gestione file (Logica centralizzata)
 const id = Astro.url.searchParams.get("id");
 const isEditing = Astro.url.searchParams.get("edit") === "true";
@@ -69,15 +76,15 @@ const pinConnections =
 
 export function getStaticPaths() {
     return [
-        { params: { lang: "en" } }, 
-        { params: { lang: "it" } }, 
-        { params: { lang: "es" } }, 
-        { params: { lang: "fr" } }, 
-        { params: { lang: "de" } }, 
-        { params: { lang: "zh" } }, 
-        { params: { lang: "ja" } }, 
-        { params: { lang: "ar" } }, 
-        { params: { lang: "ru" } }
+        { params: { lang: "en" } },
+        { params: { lang: "it" } },
+        { params: { lang: "es" } },
+        { params: { lang: "fr" } },
+        { params: { lang: "de" } },
+        { params: { lang: "zh" } },
+        { params: { lang: "ja" } },
+        { params: { lang: "ar" } },
+        { params: { lang: "ru" } },
     ];
 }
 ---
@@ -112,21 +119,22 @@ export function getStaticPaths() {
             {
                 selectedNote ? (
                     isEditing && userIsAdmin ? (
-                        <AnnotazioneEdit 
-                        note={selectedNote} 
-                        i18n={{
-                            title: i18n("editor.title"),
-                            text: i18n("editor.text"),
-                            type: i18n("editor.type"),
-                            note: i18n("editor.type.note"),
-                            quiz: i18n("editor.type.quiz"),
-                            slide: i18n("editor.type.slide"),
-                            diagram: i18n("editor.type.diagram"),
-                            help: i18n("editor.help"),
-                            save: i18n("editor.save"),
-                            cancel: i18n("editor.cancel"),
-                        }}
-                        client:load />
+                        <AnnotazioneEdit
+                            note={selectedNote}
+                            i18n={{
+                                title: i18n("editor.title"),
+                                text: i18n("editor.text"),
+                                type: i18n("editor.type"),
+                                note: i18n("editor.type.note"),
+                                quiz: i18n("editor.type.quiz"),
+                                slide: i18n("editor.type.slide"),
+                                diagram: i18n("editor.type.diagram"),
+                                help: i18n("editor.help"),
+                                save: i18n("editor.save"),
+                                cancel: i18n("editor.cancel"),
+                            }}
+                            client:load
+                        />
                     ) : (
                         <NoteLayout
                             title={selectedNote.title}
