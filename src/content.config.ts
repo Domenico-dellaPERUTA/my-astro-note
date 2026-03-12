@@ -3,6 +3,7 @@ import { glob } from 'astro/loaders';
 import { notesDb } from './db/mysql';
 
 export const collections = {
+    /*
     notes: defineCollection({
         loader: async () => {
             const notes = await notesDb.getAll();
@@ -27,6 +28,7 @@ export const collections = {
             updatedAt: z.date(),
         }),
     }),
+    */
     docs: defineCollection({
         // Carica file .md dalla cartella src/content/docs
         loader: glob({ pattern: "**/*.md", base: "./src/content/docs" }),

@@ -20,6 +20,12 @@ const id = Astro.url.searchParams.get("id");
 // Recupera la lingua di default per passarla al bridge e usarla nel client leggendo direttamente il file
 const config = await getRawSiteConfig();
 const defaultLang = config.defaultLang || "it";
+
+console.log(`[SSR NoteLayout.astro] Rendering note: ${title}`);
+console.log(
+    `[SSR NoteLayout.astro] Astro.props.targetLang received: "${Astro.props.targetLang}"`,
+);
+console.log(`[SSR NoteLayout.astro] targetLang variable: "${targetLang}"`);
 ---
 
 <div class="annotazione">

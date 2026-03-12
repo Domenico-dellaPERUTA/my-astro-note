@@ -1,23 +1,25 @@
 services:
   app:
-    image: node:22.14.0
+    image: node:22.14.0-alpine
     container_name: my-astro-app
     restart: unless-stopped
     volumes:
-      - .:/workspace
-      - ./public/WebApp:/workspace/public/WebApp:ro
-      - /workspace/node_modules
+      - ./dist:/workspace/dist:ro                              # build compilata di Astro
+      - ./node_modules:/workspace/node_modules:ro             # dipendenze di produzione
+      - ./dist/client/WebApp:/workspace/dist/client/WebApp:ro # asset WebApp (sovrascrive il mount dist/)
     working_dir: /workspace
-    command: sh -c "npm install && npm run build && npm run preview -- --host 0.0.0.0"
+    command: node dist/server/entry.mjs
     ports:
       - "4321:4321"
     environment:
+      - HOST=0.0.0.0
+      - PORT=4321
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=appunti_db
-      - DB_USER=ninja
+      - DB_USER=root
       - DB_PASSWORD=Orione___
-      - WEBAPP_PATH=/workspace/public/WebApp
+      - WEBAPP_PATH=/workspace/dist/client/WebApp
     networks:
       - proxy_net
     depends_on:
