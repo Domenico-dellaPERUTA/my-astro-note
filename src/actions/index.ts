@@ -419,6 +419,8 @@ export const server = {
     },
 
     // --- Servizi Esterni ---
+    // Nota: questo endpoint non è ufficiale. Per uso personale/educativo.
+    // Per produzione usare Google Cloud Translation API o alternative ufficiali.
     proxyTranslate: defineAction({
         accept: 'json',
         input: z.object({
@@ -466,6 +468,8 @@ export const server = {
         }
     }),
 
+    // Nota: questo endpoint non è ufficiale. Per uso personale/educativo.
+    // Per produzione usare Google Cloud Translation API o alternative ufficiali.
     proxyTTS: defineAction({
         accept: 'json',
         input: z.object({
