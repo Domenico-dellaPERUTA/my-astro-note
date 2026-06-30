@@ -86,3 +86,33 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-02-25 11:50:44
+
+
+--
+-- Table structure for table `config`
+--
+
+DROP TABLE IF EXISTS `config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE  `config` (
+  `key` VARCHAR(100) NOT NULL,
+  `value` TEXT NOT NULL,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `config`
+--
+
+LOCK TABLES `config` WRITE;
+/*!40000 ALTER TABLE `config` DISABLE KEYS */;
+INSERT IGNORE INTO `config` (`key`, `value`) VALUES ('defaultLang', 'it');
+INSERT IGNORE INTO `config` (`key`, `value`) VALUES ('avatar.currentModel', 'avatar.glb');
+INSERT IGNORE INTO `config` (`key`, `value`) VALUES ('avatar.cameraY', '1.3');
+INSERT IGNORE INTO `config` (`key`, `value`) VALUES ('avatar.cameraZ', '2.1');
+INSERT IGNORE INTO `config` (`key`, `value`) VALUES ('avatar.cameraTargetY', '1.55');
+/*!40000 ALTER TABLE `config` ENABLE KEYS */;
+UNLOCK TABLES;

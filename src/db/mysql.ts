@@ -124,6 +124,22 @@ export const notesDb = {
   }
 };
 
+export const configDb = {
+    async get(key: string): Promise<string | null> {
+        const [rows]: any = await pool.query(
+            'SELECT value FROM config WHERE `key` = ?', [key]
+        );
+        return rows.length > 0 ? rows[0].value : null;
+    },
+
+    async set(key: string, value: string): Promise<void> {
+        await pool.query(
+            'INSERT INTO config (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?',
+            [key, value, value]
+        );
+    }
+};
+
 export async function closePool(): Promise<void> {
   await pool.end();
 }

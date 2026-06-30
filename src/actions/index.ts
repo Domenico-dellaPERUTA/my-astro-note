@@ -1,7 +1,7 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 import { usersDb } from '../db/users';
-import { notesDb } from '../db/mysql';
+import { notesDb, configDb } from '../db/mysql';
 import { isAdmin } from '../lib/auth';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
@@ -321,23 +321,6 @@ export const server = {
 
     // --- Configurazioni e Modelli ---
     config: {
-        getAvatarConfig: defineAction({
-            handler: async () => {
-                try {
-                    const config = await getEntry("config", "avatar");
-                    return config ? config.data : {
-                        currentModel: "avatar.glb",
-                        cameraY: 1.3,
-                        cameraZ: 2.1,
-                        cameraTargetY: 1.55
-                    };
-                } catch (error) {
-                    console.error('Action Error (getAvatarConfig):', error);
-                    throw new Error('Errore nel caricamento della configurazione avatar');
-                }
-            }
-        }),
-
         updateAvatarConfig: defineAction({
             accept: 'json',
             input: z.object({
@@ -349,18 +332,34 @@ export const server = {
             handler: async (input, context) => {
                 if (!isAdmin(context.cookies)) throw new Error('Operazione non autorizzata');
                 try {
-                    const configPath = path.join(process.cwd(), 'src', 'content', 'config', 'avatar.md');
-                    let yaml = `currentModel: "${input.currentModel}"`;
-                    if (input.cameraY !== undefined) yaml += `\ncameraY: ${input.cameraY}`;
-                    if (input.cameraZ !== undefined) yaml += `\ncameraZ: ${input.cameraZ}`;
-                    if (input.cameraTargetY !== undefined) yaml += `\ncameraTargetY: ${input.cameraTargetY}`;
-
-                    const content = `---\n${yaml}\n---\n\n# Avatar Configuration\nThis file stores the selected avatar model and its camera view settings.\n`;
-                    await fs.writeFile(configPath, content);
+                    await configDb.set('avatar.currentModel', input.currentModel);
+                    if (input.cameraY !== undefined) await configDb.set('avatar.cameraY', String(input.cameraY));
+                    if (input.cameraZ !== undefined) await configDb.set('avatar.cameraZ', String(input.cameraZ));
+                    if (input.cameraTargetY !== undefined) await configDb.set('avatar.cameraTargetY', String(input.cameraTargetY));
                     return { success: true };
                 } catch (error) {
                     console.error('Action Error (updateAvatarConfig):', error);
                     throw new Error('Errore nel salvataggio della configurazione avatar');
+                }
+            }
+        }),
+
+        getAvatarConfig: defineAction({
+            handler: async () => {
+                try {
+                    const currentModel = await configDb.get('avatar.currentModel');
+                    const cameraY = await configDb.get('avatar.cameraY');
+                    const cameraZ = await configDb.get('avatar.cameraZ');
+                    const cameraTargetY = await configDb.get('avatar.cameraTargetY');
+                    return {
+                        currentModel: currentModel || 'avatar.glb',
+                        cameraY: cameraY ? parseFloat(cameraY) : 1.3,
+                        cameraZ: cameraZ ? parseFloat(cameraZ) : 2.1,
+                        cameraTargetY: cameraTargetY ? parseFloat(cameraTargetY) : 1.55,
+                    };
+                } catch (error) {
+                    console.error('Action Error (getAvatarConfig):', error);
+                    throw new Error('Errore nel caricamento della configurazione avatar');
                 }
             }
         }),
@@ -392,9 +391,7 @@ export const server = {
             handler: async (input, context) => {
                 if (!isAdmin(context.cookies)) throw new Error('Operazione non autorizzata');
                 try {
-                    const configPath = path.join(process.cwd(), 'src', 'content', 'config', 'site.md');
-                    const content = `---\ndefaultLang: "${input.defaultLang}"\n---\n\n# Site Configuration\nThis file stores general site settings.\n`;
-                    await fs.writeFile(configPath, content);
+                    await configDb.set('defaultLang', input.defaultLang);
                     return { success: true };
                 } catch (error) {
                     console.error('Action Error (updateSiteConfig):', error);

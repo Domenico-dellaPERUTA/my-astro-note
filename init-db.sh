@@ -4,7 +4,7 @@ set -e
 
 DB_CONTAINER="my-astro-db"
 DB_NAME="appunti_db"
-DB_USER="ninja"
+DB_USER="root"
 DB_PASSWORD="Orione___"
 SQL_FILE="create_table_db.sql"
 
